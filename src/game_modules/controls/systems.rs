@@ -28,17 +28,17 @@ fn controls_init_system(mut commands: Commands) {
 
 fn controls_system(mut query: Query<&mut ControlsComponent, With<ControlsEntity>>) {
     // Single Query
-    if let Ok(mut Controls_component) = query.get_single_mut() {
-        Controls_component.data = "Hello, World!".to_string();
+    if let Ok(mut controlscomponent) = query.get_single_mut() {
+        controlscomponent.data = "Hello, World!".to_string();
     }
 
     // Multiple Queries
-    for mut Controls_component in query.iter_mut() {
-        if (Controls_component.printed) {
+    for mut controlscomponent in query.iter_mut() {
+        if (controlscomponent.printed) {
             continue;
         }
 
-        println!("{:?}", Controls_component.data);
-        Controls_component.printed = true;
+        println!("{:?}", controlscomponent.data);
+        controlscomponent.printed = true;
     }
 }

@@ -33,17 +33,17 @@ fn __templateNameToLowerCase___system(
     >,
 ) {
     // Single Query
-    if let Ok(mut __templateNameToLowerCase__component) = query.get_single_mut() {
-        __templateNameToLowerCase__component.data = "Hello, World!".to_string();
+    if let Ok(mut __templateNameToLowerCase___component) = query.get_single_mut() {
+        __templateNameToLowerCase___component.data = "Hello, World!".to_string();
     }
 
     // Multiple Queries
-    for mut __templateNameToLowerCase__component in query.iter_mut() {
-        if (__templateNameToLowerCase__component.printed) {
+    for mut __templateNameToLowerCase___component in query.iter_mut() {
+        if (__templateNameToLowerCase___component.printed) {
             continue;
         }
 
-        println!("{:?}", __templateNameToLowerCase__component.data);
-        __templateNameToLowerCase__component.printed = true;
+        println!("{:?}", __templateNameToLowerCase___component.data);
+        __templateNameToLowerCase___component.printed = true;
     }
 }
