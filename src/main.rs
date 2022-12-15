@@ -4,7 +4,6 @@
 mod game_modules;
 
 use bevy::prelude::*;
-use game_modules::template::systems::TemplatePlugin;
 
 fn main() {
     App::new()
@@ -18,6 +17,5 @@ fn main() {
             },
             ..Default::default()
         }))
-        .add_plugin(TemplatePlugin)
         .run();
 }
