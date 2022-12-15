@@ -4,4 +4,4 @@ use bevy::prelude::Component;
 // SHOULD: represent an actual entity on the game
 
 #[derive(Component)]
-pub struct TemplateEntity;
+pub struct __templateNameToPascalCase__Entity;
