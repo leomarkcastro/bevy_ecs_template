@@ -7,12 +7,18 @@ use bevy_rapier2d::prelude::{Collider, RigidBody, Velocity};
 use crate::{
     entity_factory::{
         entities::global::{
-            physics_movable::{components::PXMovableComponent, systems::insert_physics_components},
+            physics_movable::{
+                components::PXMovableComponent,
+                systems::{insert_physics_components, PhysicsFeature},
+            },
             static_movable::components::MovableComponent,
         },
         factory::data::SpawnEntityEvent,
     },
-    game_modules::controllable::components::ControllableComponent,
+    game_modules::{
+        camera::components::CameraFollowable, controllable::components::ControllableResource,
+        face_axis::components::FaceAxisResource,
+    },
 };
 
 use super::{components::InputBind, Playerv2Entity};
@@ -29,7 +35,7 @@ pub fn plaverv2_spawn(mut commands: &mut Commands, spawn_entity_event: &SpawnEnt
     let mut body = commands.spawn(SpriteBundle {
         sprite: Sprite {
             color: Color::rgb(0.0, 0.0, 1.0),
-            custom_size: Some(Vec2::new(100.0, 100.0)),
+            custom_size: Some(Vec2::new(10.0, 10.0)),
             ..Default::default()
         },
         transform: Transform {
@@ -41,20 +47,30 @@ pub fn plaverv2_spawn(mut commands: &mut Commands, spawn_entity_event: &SpawnEnt
     });
 
     body.insert(Playerv2Entity)
-        .insert(InputBind { active: true });
-    insert_physics_components(&mut body);
+        .insert(CameraFollowable::default())
+        .insert(InputBind {
+            active: true,
+            mouse_active: true,
+        });
+    insert_physics_components(
+        &mut body,
+        PhysicsFeature {
+            size: Some(Vec2::new(5.0, 5.0)),
+        },
+    );
 }
 
 fn playerv2_control_system(
-    controllable_query: Query<&ControllableComponent>,
+    controller: Res<ControllableResource>,
+    faceaxis: Res<FaceAxisResource>,
     mut query: Query<(&InputBind, &mut PXMovableComponent), With<Playerv2Entity>>,
 ) {
-    let controller = controllable_query.single();
     for (input_bind, mut movable) in query.iter_mut() {
         if (!input_bind.active) {
             return;
         }
         movable.vec_x = controller.joy_x;
         movable.vec_y = controller.joy_y;
+        movable.angle = faceaxis.angle;
     }
 }

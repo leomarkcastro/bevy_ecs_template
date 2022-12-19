@@ -8,7 +8,7 @@ use crate::{
         entities::global::static_movable::components::MovableComponent,
         factory::data::SpawnEntityEvent,
     },
-    game_modules::controllable::components::ControllableComponent,
+    game_modules::controllable::components::ControllableResource,
 };
 
 use super::{components::InputBind, Playerv1Entity};
@@ -42,10 +42,9 @@ pub fn plaverv1_spawn(mut commands: &mut Commands, spawn_entity_event: &SpawnEnt
 }
 
 fn playerv1_control_system(
-    controllable_query: Query<&ControllableComponent>,
+    controller: Res<ControllableResource>,
     mut query: Query<(&InputBind, &mut MovableComponent), With<Playerv1Entity>>,
 ) {
-    let controller = controllable_query.single();
     for (input_bind, mut movable) in query.iter_mut() {
         if (!input_bind.active) {
             return;

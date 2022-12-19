@@ -6,7 +6,7 @@ use bevy::prelude::*;
 use crate::{
     entity_factory::factory::data::{GameEntity, SpawnEntityEvent},
     game_modules::{
-        controllable::components::ControllableComponent, timers::components::OneSecondTimer,
+        controllable::components::ControllableResource, timers::components::OneSecondTimer,
     },
     scene_manager::manager::{
         entities::{SpawnAt, World01},
@@ -45,19 +45,17 @@ fn scene01_init_system() {
 
 fn scene01_clickspawning_system(
     mut spawn_entity_events: EventWriter<SpawnEntityEvent>,
-    controllable_query: Query<&ControllableComponent>,
+    controllable_component: Res<ControllableResource>,
 ) {
-    for controllable_component in controllable_query.iter() {
-        if (!controllable_component.enabled) {
-            continue;
-        }
+    if (!controllable_component.enabled) {
+        return;
+    }
 
-        if (controllable_component.btn_a.pressed) {
-            spawn_entity_events.send(SpawnEntityEvent {
-                entity: GameEntity::PlayerV1,
-                ..Default::default()
-            });
-        }
+    if (controllable_component.btn_a.pressed) {
+        spawn_entity_events.send(SpawnEntityEvent {
+            entity: GameEntity::PlayerV1,
+            ..Default::default()
+        });
     }
 }
 

@@ -6,7 +6,7 @@ use bevy::prelude::*;
 use crate::{
     entity_factory::factory::data::{GameEntity, SpawnEntityEvent},
     game_modules::{
-        controllable::components::ControllableComponent,
+        controllable::components::ControllableResource,
         save_load::{data::GlobalSaveData, systems::TriggerSaveLoadEvevnt},
         timers::components::OneSecondTimer,
     },
@@ -42,37 +42,35 @@ fn scene02_init_system() {
 fn scene02_clickspawning_system(
     mut spawn_entity_events: EventWriter<SpawnEntityEvent>,
     mut save_load_events: EventWriter<TriggerSaveLoadEvevnt>,
-    controllable_query: Query<&ControllableComponent>,
+    controllable_component: Res<ControllableResource>,
 ) {
-    for controllable_component in controllable_query.iter() {
-        if (!controllable_component.enabled) {
-            continue;
-        }
+    if (!controllable_component.enabled) {
+        return;
+    }
 
-        if (controllable_component.btn_a.pressed) {
-            spawn_entity_events.send(SpawnEntityEvent {
-                entity: GameEntity::PlayerV1,
-                ..Default::default()
-            });
-        }
-        if (controllable_component.btn_b.pressed) {
-            // generate random number
-            let random_number = rand::random::<i32>();
+    if (controllable_component.btn_a.pressed) {
+        spawn_entity_events.send(SpawnEntityEvent {
+            entity: GameEntity::PlayerV1,
+            ..Default::default()
+        });
+    }
+    if (controllable_component.btn_b.pressed) {
+        // generate random number
+        let random_number = rand::random::<i32>();
 
-            save_load_events.send(TriggerSaveLoadEvevnt {
-                save: true,
-                load: false,
-                data: Some(GlobalSaveData {
-                    player_health: random_number,
-                }),
-            });
-        }
-        if (controllable_component.btn_c.pressed) {
-            save_load_events.send(TriggerSaveLoadEvevnt {
-                save: false,
-                load: true,
-                data: None,
-            });
-        }
+        save_load_events.send(TriggerSaveLoadEvevnt {
+            save: true,
+            load: false,
+            data: Some(GlobalSaveData {
+                player_health: random_number,
+            }),
+        });
+    }
+    if (controllable_component.btn_c.pressed) {
+        save_load_events.send(TriggerSaveLoadEvevnt {
+            save: false,
+            load: true,
+            data: None,
+        });
     }
 }

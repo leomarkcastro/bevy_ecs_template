@@ -1,7 +1,10 @@
 // To describe how the Scene03 component/entity should behave.
 // WILL: contain pure logic that interacts with the component
 
-use bevy::prelude::*;
+use bevy::{
+    prelude::{shape::Quad, *},
+    sprite::MaterialMesh2dBundle,
+};
 use bevy_rapier2d::{
     prelude::{
         Collider, NoUserData, RapierConfiguration, RapierPhysicsPlugin, RigidBody, Velocity,
@@ -10,10 +13,15 @@ use bevy_rapier2d::{
 };
 
 use crate::{
-    entity_factory::factory::data::{GameEntity, SpawnEntityEvent},
+    entity_factory::{
+        entities::playerv2::entities::Playerv2Entity,
+        factory::data::{GameEntity, SpawnEntityEvent},
+    },
     game_modules::{
-        controllable::components::ControllableComponent,
+        camera::components::{CameraFollowable, CameraMode, CameraResource},
+        controllable::components::ControllableResource,
         save_load::{data::GlobalSaveData, systems::TriggerSaveLoadEvevnt},
+        shaders::simple_point_light::components::{CoolMaterial, CoolMaterialUniformInput},
         timers::components::OneSecondTimer,
     },
     scene_manager::manager::{
@@ -32,12 +40,24 @@ impl Plugin for Scene03Plugin {
         )
         .add_system_set(SystemSet::on_update(GameScene::Scene03).with_system(scene03_run_system))
         .add_system_set(
+            SystemSet::on_update(GameScene::Scene03)
+                .with_system(scene03_follow_first_player_system),
+        )
+        .add_system_set(
             SystemSet::on_exit(GameScene::Scene03).with_system(despawn_screen::<World01>),
         );
     }
 }
 
-fn scene03_init_system(mut commands: Commands) {
+fn scene03_init_system(
+    mut commands: Commands,
+    mut mesh_assets: ResMut<Assets<Mesh>>,
+    mut my_material_assets: ResMut<Assets<CoolMaterial>>,
+    mut camera_resource: ResMut<CameraResource>,
+) {
+    // camera_resource.mode = CameraMode::AtPoint {
+    //     target_point: Vec3::new(60.0, 0.0, 0.0),
+    // };
     println!("Scene03 init");
     // commands.spawn(SpriteBundle {
     //     sprite: Sprite {
@@ -52,10 +72,24 @@ fn scene03_init_system(mut commands: Commands) {
     //     ..Default::default()
     // });
 
-    commands.insert_resource(AmbientLight {
-        color: Color::WHITE,
-        brightness: 0.0,
-    });
+    // commands
+    //     .spawn(MaterialMesh2dBundle {
+    //         mesh: mesh_assets
+    //             .add(Mesh::from(shape::Quad::from(Quad {
+    //                 size: Vec2::new(50., 50.),
+    //                 ..Default::default()
+    //             })))
+    //             .into(),
+    //         material: my_material_assets.add(CoolMaterial {
+    //             ..Default::default()
+    //         }),
+    //         transform: Transform::from_xyz(0.0, 0.0, 0.0),
+    //         ..default()
+    //     })
+    //     .insert(CoolMaterialUniformInput {
+    //         color: Color::rgba(0.0, 0.0, 0.0, 0.75),
+    //         ..Default::default()
+    //     });
 
     // light
     // commands.spawn(PointLightBundle {
@@ -72,18 +106,38 @@ fn scene03_init_system(mut commands: Commands) {
 
 fn scene03_run_system(
     mut spawn_entity_events: EventWriter<SpawnEntityEvent>,
-    controllable_query: Query<&ControllableComponent>,
+    controllable_component: Res<ControllableResource>,
 ) {
-    for controllable_component in controllable_query.iter() {
-        if (!controllable_component.enabled) {
-            continue;
-        }
+    if (!controllable_component.enabled) {
+        return;
+    }
 
-        if (controllable_component.btn_a.pressed) {
-            spawn_entity_events.send(SpawnEntityEvent {
-                entity: GameEntity::PlayerV2,
-                ..Default::default()
-            });
+    if (controllable_component.btn_a.pressed) {
+        spawn_entity_events.send(SpawnEntityEvent {
+            entity: GameEntity::PlayerV2,
+            ..Default::default()
+        });
+    }
+}
+
+fn scene03_follow_first_player_system(
+    mut camera_resource: ResMut<CameraResource>,
+    player_query: Query<(&CameraFollowable), With<Playerv2Entity>>,
+) {
+    if let Ok((&followable)) = player_query.get_single() {
+        if let CameraMode::AtAssetFace {
+            target_asset_id,
+            distance,
+        } = camera_resource.mode
+        {
+            return;
         }
+        // println!("CameraMode::AtAsset");
+        let followable_id = followable.id;
+        camera_resource.mode = CameraMode::AtAssetFace {
+            target_asset_id: followable_id,
+            distance: 30.0,
+        };
+        camera_resource.speed = 0.04;
     }
 }

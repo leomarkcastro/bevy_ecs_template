@@ -7,6 +7,7 @@ use bevy::prelude::Component;
 pub struct PXMovableComponent {
     pub vec_x: f32,
     pub vec_y: f32,
+    pub angle: f32,
 }
 
 impl Default for PXMovableComponent {
@@ -14,6 +15,7 @@ impl Default for PXMovableComponent {
         Self {
             vec_x: 0.0,
             vec_y: 0.0,
+            angle: 0.0,
         }
     }
 }

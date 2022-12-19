@@ -4,7 +4,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    game_modules::controllable::{components::ControllableComponent, entities::ControllableEntity},
+    game_modules::controllable::{components::ControllableResource, entities::ControllableEntity},
     scene_manager::scenes::{inject_scenes, test_scene01::systems::Scene01Plugin, DEFAULT_SCENE},
 };
 
@@ -32,7 +32,7 @@ impl Plugin for SceneManagerPlugin {
 
 fn manager_init_system(mut commands: Commands) {
     // IDK if i should put it here or on their respective scenes
-    commands.spawn(Camera2dBundle::default());
+    // commands.spawn(Camera2dBundle::default());
 }
 
 fn manager_system(
@@ -49,30 +49,28 @@ fn manager_system(
 }
 
 fn manager_test_system(
-    control_query: Query<&ControllableComponent, With<ControllableEntity>>,
+    controllable_component: Res<ControllableResource>,
     mut change_scene_event_writer: EventWriter<ChangeSceneEvent>,
 ) {
-    for mut controllable_component in control_query.iter() {
-        if (!controllable_component.enabled) {
-            continue;
-        }
+    if (!controllable_component.enabled) {
+        return;
+    }
 
-        if (controllable_component.btn_a.pressed) {
-            change_scene_event_writer.send(ChangeSceneEvent {
-                to_scene: GameScene::Scene02,
-            });
-        }
+    if (controllable_component.btn_a.pressed) {
+        change_scene_event_writer.send(ChangeSceneEvent {
+            to_scene: GameScene::Scene02,
+        });
+    }
 
-        if (controllable_component.btn_b.pressed) {
-            change_scene_event_writer.send(ChangeSceneEvent {
-                to_scene: GameScene::Scene03,
-            });
-        }
+    if (controllable_component.btn_b.pressed) {
+        change_scene_event_writer.send(ChangeSceneEvent {
+            to_scene: GameScene::Scene03,
+        });
+    }
 
-        if (controllable_component.btn_c.pressed) {
-            change_scene_event_writer.send(ChangeSceneEvent {
-                to_scene: GameScene::Scene01,
-            });
-        }
+    if (controllable_component.btn_c.pressed) {
+        change_scene_event_writer.send(ChangeSceneEvent {
+            to_scene: GameScene::Scene01,
+        });
     }
 }

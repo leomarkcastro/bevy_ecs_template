@@ -1,4 +1,4 @@
-use bevy::prelude::Component;
+use bevy::prelude::Resource;
 
 // To be used as data for the controllable entity.
 // WILL: contain data describing the current status of its attached entity in its respective domain
@@ -9,8 +9,8 @@ pub struct ButtonClick {
     pub pressed: bool,
 }
 
-#[derive(Component, Debug)]
-pub struct ControllableComponent {
+#[derive(Resource, Debug)]
+pub struct ControllableResource {
     // system
     pub enabled: bool, // To enable/disable the controllable component
 
@@ -27,7 +27,7 @@ pub struct ControllableComponent {
                             // we can add more buttons here
 }
 
-impl ControllableComponent {
+impl ControllableResource {
     pub fn new(is_enabled: bool) -> Self {
         Self {
             joy_x: 0.0,

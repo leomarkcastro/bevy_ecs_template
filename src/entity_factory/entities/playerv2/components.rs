@@ -6,10 +6,14 @@ use bevy::prelude::Component;
 #[derive(Component)]
 pub struct InputBind {
     pub active: bool,
+    pub mouse_active: bool,
 }
 
 impl Default for InputBind {
     fn default() -> Self {
-        Self { active: false }
+        Self {
+            active: false,
+            mouse_active: false,
+        }
     }
 }

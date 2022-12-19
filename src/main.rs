@@ -1,21 +1,23 @@
 #![allow(unused)]
-#![deny(clippy::all)]
+// #![deny(clippy::all)]
 
 mod entity_factory;
 mod game_modules;
 mod scene_manager;
 
 use bevy::prelude::*;
+use bevy_inspector_egui::WorldInspectorPlugin;
 use entity_factory::factory::systems::EntityFactoryPlugin;
 use game_modules::{
-    controllable::systems::ControllablePlugin, save_load::systems::SaveLoadFactoryPlugin,
-    timers::systems::TimersPlugin,
+    camera::systems::CameraSetupPlugin, controllable::systems::ControllablePlugin,
+    face_axis::systems::FaceAxisPlugin, save_load::systems::SaveLoadFactoryPlugin,
+    shaders::systems::ShadersPlugin, timers::systems::TimersPlugin,
 };
 use scene_manager::manager::systems::SceneManagerPlugin;
 
 fn main() {
     App::new()
-        .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
+        .insert_resource(ClearColor(Color::rgb(1.0, 1.0, 1.0)))
         .add_plugins(
             DefaultPlugins
                 .set(WindowPlugin {
@@ -34,9 +36,13 @@ fn main() {
                     ..default()
                 }),
         )
+        .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(SaveLoadFactoryPlugin)
         .add_plugin(TimersPlugin)
         .add_plugin(ControllablePlugin)
+        .add_plugin(FaceAxisPlugin)
+        .add_plugin(CameraSetupPlugin)
+        .add_plugin(ShadersPlugin)
         .add_plugin(EntityFactoryPlugin)
         .add_plugin(SceneManagerPlugin)
         .run();
