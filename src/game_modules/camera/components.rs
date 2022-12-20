@@ -41,7 +41,7 @@ impl Default for CameraResource {
 }
 
 // Anything that camera can follow should have this component
-#[derive(Component, Clone, Copy)]
+#[derive(Debug, Component, Clone, Copy)]
 pub struct CameraFollowable {
     pub id: Uuid,
 }

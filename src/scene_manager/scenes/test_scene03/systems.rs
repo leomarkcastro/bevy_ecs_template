@@ -15,7 +15,7 @@ use bevy_rapier2d::{
 use crate::{
     entity_factory::{
         entities::playerv2::entities::Playerv2Entity,
-        factory::data::{GameEntity, SpawnEntityEvent},
+        factory::data::{GameEntity, SpawnEntityEvent, SpawnUIEvent},
     },
     game_modules::{
         camera::components::{CameraFollowable, CameraMode, CameraResource},
@@ -106,18 +106,38 @@ fn scene03_init_system(
 
 fn scene03_run_system(
     mut spawn_entity_events: EventWriter<SpawnEntityEvent>,
+    mut spawn_ui_events: EventWriter<SpawnUIEvent>,
     controllable_component: Res<ControllableResource>,
 ) {
     if (!controllable_component.enabled) {
         return;
     }
 
-    if (controllable_component.btn_a.pressed) {
+    if (controllable_component.btn_b.pressed) {
+        spawn_ui_events.send(SpawnUIEvent {
+            ..Default::default()
+        });
+    }
+
+    if (controllable_component.btn_c.pressed) {
         spawn_entity_events.send(SpawnEntityEvent {
             entity: GameEntity::PlayerV2,
             ..Default::default()
         });
     }
+
+    if (controllable_component.btn_d.pressed) {
+        spawn_entity_events.send(SpawnEntityEvent {
+            entity: GameEntity::Zombiesv1,
+            ..Default::default()
+        });
+    }
+    // if (controllable_component.btn_a.pressed) {
+    //     spawn_entity_events.send(SpawnEntityEvent {
+    //         entity: GameEntity::Bulletv1,
+    //         ..Default::default()
+    //     });
+    // }
 }
 
 fn scene03_follow_first_player_system(

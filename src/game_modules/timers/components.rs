@@ -18,3 +18,15 @@ impl Default for OneSecondTimer {
         }
     }
 }
+#[derive(Resource)]
+pub struct ThreeSecondTimer {
+    pub event_timer: Timer,
+}
+
+impl Default for ThreeSecondTimer {
+    fn default() -> Self {
+        ThreeSecondTimer {
+            event_timer: Timer::from_seconds(3.0, TimerMode::Repeating),
+        }
+    }
+}

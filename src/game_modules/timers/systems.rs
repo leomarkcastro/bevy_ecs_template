@@ -3,12 +3,13 @@
 
 use bevy::prelude::*;
 
-use super::OneSecondTimer;
+use super::{components::ThreeSecondTimer, OneSecondTimer};
 
 pub struct TimersPlugin;
 
 impl Plugin for TimersPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<OneSecondTimer>();
+        app.init_resource::<OneSecondTimer>()
+            .init_resource::<ThreeSecondTimer>();
     }
 }

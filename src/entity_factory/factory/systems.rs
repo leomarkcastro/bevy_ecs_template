@@ -6,19 +6,22 @@ use bevy::prelude::*;
 use crate::entity_factory::{
     entities::{
         inject_entities, playerv1::systems::plaverv1_spawn, playerv2::systems::plaverv2_spawn,
+        ui::screen::simple_text::systems::simple_text_spawn, zombiesv1::systems::zombiesv1_spawn,
     },
-    factory::data::GameEntity,
+    factory::data::{GameEntity, UIEntity},
 };
 
-use super::data::SpawnEntityEvent;
+use super::data::{SpawnEntityEvent, SpawnUIEvent};
 
 pub struct EntityFactoryPlugin;
 
 impl Plugin for EntityFactoryPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<SpawnEntityEvent>()
+            .add_event::<SpawnUIEvent>()
             .add_startup_system(factory_init_system)
-            .add_system(factory_system);
+            .add_system(factory_system)
+            .add_system(ui_factory_system);
 
         inject_entities(app);
     }
@@ -55,6 +58,21 @@ fn factory_system(mut commands: Commands, mut spawn_entity_events: EventReader<S
             }
             PlayerV1 => plaverv1_spawn(&mut commands, event),
             PlayerV2 => plaverv2_spawn(&mut commands, event),
+            Zombiesv1 => zombiesv1_spawn(&mut commands, event),
+            _ => {}
+        }
+    }
+}
+
+fn ui_factory_system(
+    mut commands: Commands,
+    mut spawn_entity_events: EventReader<SpawnUIEvent>,
+    asset_server: Res<AssetServer>,
+) {
+    use GameEntity::*;
+    for event in spawn_entity_events.iter() {
+        match event.entity {
+            UIEntity::SimpleText => simple_text_spawn(&mut commands, event, &asset_server),
             _ => {}
         }
     }

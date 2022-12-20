@@ -11,6 +11,7 @@ impl Plugin for ControllablePlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(ControllableResource::new(true))
             // .add_startup_system(controllable_test_init_system)
+            .add_system(controllable_mouse_system)
             .add_system(controllable_kb_system);
         // .add_system(controllable_view_system);
     }
@@ -55,10 +56,28 @@ fn controllable_kb_system(
         key.pressed = kb.just_pressed(kbc);
     };
 
-    key_to_kb(&mut controllable_component.btn_a, KeyCode::Space);
-    key_to_kb(&mut controllable_component.btn_b, KeyCode::E);
+    // key_to_kb(&mut controllable_component.btn_a, KeyCode::Space);
+    // key_to_kb(&mut controllable_component.btn_b, KeyCode::E);
     key_to_kb(&mut controllable_component.btn_c, KeyCode::Escape);
     key_to_kb(&mut controllable_component.btn_d, KeyCode::Return);
+}
+
+fn controllable_mouse_system(
+    mouse_button_input: Res<Input<MouseButton>>,
+    mut controllable_component: ResMut<ControllableResource>,
+) {
+    // We can either control ourselves, a car, a crane or anything else.
+    if (!controllable_component.enabled) {
+        return;
+    }
+
+    let key_to_kb = |mut key: &mut ButtonClick, kbc: MouseButton| {
+        key.hold = mouse_button_input.pressed(kbc);
+        key.pressed = mouse_button_input.just_pressed(kbc);
+    };
+
+    key_to_kb(&mut controllable_component.btn_a, MouseButton::Left);
+    key_to_kb(&mut controllable_component.btn_b, MouseButton::Right);
 }
 
 fn controllable_view_system(controllable_component: Res<ControllableResource>) {
