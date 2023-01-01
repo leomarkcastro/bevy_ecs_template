@@ -33,16 +33,20 @@ const BASE_SPEED: f32 = 50.;
 
 pub struct PhysicsFeature {
     pub size: Option<Vec2>,
+    pub paths_data: Option<(Vec<Vec2>, Vec<[u32; 2]>)>,
     pub body_type: Option<CollidableBody>,
     pub effect: Option<ProjectileEffect>,
+    pub rigidbody_type: Option<RigidBody>,
 }
 
 impl Default for PhysicsFeature {
     fn default() -> Self {
         Self {
             size: None,
+            paths_data: None,
             body_type: None,
             effect: None,
+            rigidbody_type: Some(RigidBody::Dynamic),
         }
     }
 }
@@ -58,10 +62,16 @@ pub fn insert_physics_components(ent_com: &mut EntityCommands, features: Physics
             ..Default::default()
         })
         .insert(ActiveEvents::COLLISION_EVENTS)
-        .insert(RigidBody::Dynamic)
+        .insert(features.rigidbody_type.unwrap_or_default())
         .insert(Velocity::zero())
-        .insert(Collider::cuboid(size.x, size.y))
         .insert(PXMovableComponent::default());
+
+    if (features.paths_data.is_some()) {
+        let (paths, indices) = features.paths_data.unwrap();
+        ent_com.insert(Collider::polyline(paths, Some(indices)));
+    } else {
+        ent_com.insert(Collider::cuboid(size.x, size.y));
+    }
 }
 
 fn physics_init_system(mut rapier_config: ResMut<RapierConfiguration>) {

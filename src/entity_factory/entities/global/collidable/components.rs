@@ -10,6 +10,8 @@ pub enum CollidableBody {
     Bullet,
     Player,
     Enemy,
+    Block,
+    Artifacts,
     Base,
 }
 

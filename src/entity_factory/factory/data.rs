@@ -1,30 +1,45 @@
 use bevy::{
     ecs::storage::Table,
-    prelude::{Color, Component, Quat, Vec3, World},
+    prelude::{Color, Component, Quat, Vec2, Vec3, World},
     text::TextAlignment,
     ui::{PositionType, Style, UiRect, Val},
+    utils::Uuid,
 };
+use bevy_prototype_lyon::prelude::DrawMode;
 
-use crate::scene_manager::manager::{entities::SpawnAt, scene_list::GameScene};
+use crate::{
+    entity_factory::entities::global::despawn::components::DespawnComponent,
+    game_modules::{
+        global_event::systems::GlobalEvent,
+        map_loader::data::{RoomData, RoomType},
+    },
+    scene_manager::manager::{entities::SpawnAt, scene_list::GameScene},
+};
 
 #[derive(Debug)]
 pub struct SpawnEntityEvent {
+    pub id: Uuid,
     pub entity: GameEntity,
+    pub entity_data: Option<GameEntityData>,
     pub position: Option<Vec3>,
     pub rotation: Option<Quat>,
+    pub size: Option<Vec2>,
     pub spawn_at: World,
 }
 
 impl Default for SpawnEntityEvent {
     fn default() -> Self {
         Self {
+            id: Uuid::new_v4(),
             entity: GameEntity::TestBox,
+            entity_data: None,
             position: Some(Vec3::new(0.0, 0.0, 0.0)),
             rotation: Some(
                 Quat::from_rotation_x(0.0)
                     * Quat::from_rotation_y(0.0)
                     * Quat::from_rotation_z(0.0),
             ),
+            size: Some(Vec2::new(10.0, 10.0)),
             spawn_at: World::default(),
         }
     }
@@ -71,7 +86,39 @@ pub enum GameEntity {
     PlayerV2,
     Bulletv1,
     Zombiesv1,
+    Pickupablev1,
+    Blockv1,
+    Blockv2,
+    Blockv3,
+    Polygonv1,
+    Polygonv2,
+    Roomv1,
 }
+
+#[derive(Debug)]
+pub enum GameEntityData {
+    Pickupablev1 {
+        on_pickup: GlobalEvent,
+    },
+    Blockv3 {
+        data: DespawnComponent,
+    },
+    Polygonv1 {
+        path: Vec<Vec2>,
+        border_size: f32,
+    },
+    Polygonv2 {
+        path: Vec<Vec2>,
+        despawn: DespawnComponent,
+        style: DrawMode,
+        is_collidable: bool,
+    },
+    Roomv1 {
+        room_type: RoomType,
+    },
+}
+
+// ==================================
 
 #[derive(Debug)]
 pub enum UIEntity {

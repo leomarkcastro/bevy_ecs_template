@@ -3,47 +3,48 @@
 
 use bevy::prelude::*;
 
-use super::{ProximityComponent, ProximityEntity};
+use crate::game_modules::global_event::systems::GlobalEvent;
+
+use super::components::ProximityDataComponent;
 
 pub struct ProximityPlugin;
 
 impl Plugin for ProximityPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(proximity_init_system)
-            .add_system(proximity_system);
+        app.add_system(proximity_system);
     }
 }
 
-fn proximity_init_system(mut commands: Commands) {
-    commands
-        .spawn(SpriteBundle {
-            ..Default::default()
-        })
-        .insert(ProximityEntity)
-        .insert(ProximityComponent {
-            data: "Hello, World!".to_string(),
-            printed: false,
-        });
-}
+fn proximity_init_system() {}
 
 fn proximity_system(
-    mut query: Query<
-        &mut ProximityComponent,
-        With<ProximityEntity>,
-    >,
+    prox_query: Query<(&ProximityDataComponent, &Transform)>,
+    mut global_event_writer: EventWriter<GlobalEvent>,
 ) {
-    // Single Query
-    if let Ok(mut proximity_component) = query.get_single_mut() {
-        proximity_component.data = "Hello, World!".to_string();
-    }
-
-    // Multiple Queries
-    for mut proximity_component in query.iter_mut() {
-        if (proximity_component.printed) {
+    for (proximity, transform) in prox_query.iter() {
+        if (!proximity.triggers_event) {
             continue;
         }
 
-        println!("{:?}", proximity_component.data);
-        proximity_component.printed = true;
+        // query all players
+        let b_agent_filter = prox_query
+            .iter()
+            .filter(|(identifier, _)| identifier.triggerer_type == proximity.triggered_by);
+
+        // check if any player is within detection range
+        for (identifier, &b_agent_transform) in b_agent_filter {
+            let distance = transform
+                .translation
+                .truncate()
+                .distance(b_agent_transform.translation.truncate());
+
+            if distance < proximity.proximity_distance {
+                global_event_writer.send(GlobalEvent {
+                    event_data: proximity.trigger_event.event_data.clone(),
+                    scene_id: proximity.trigger_event.scene_id.clone(),
+                });
+                break;
+            }
+        }
     }
 }

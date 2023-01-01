@@ -16,8 +16,8 @@ use super::components::{CameraFollowable, CameraMode, CameraResource};
 pub const CLEAR: Color = Color::rgb(1.0, 1.0, 1.0);
 pub const HEIGHT: f32 = 600.0;
 pub const RESOLUTION: f32 = 4.0 / 3.0;
-pub const PROJECTION_SIZE: f32 = 50.0;
-pub const SCALE_MODE: ScalingMode = ScalingMode::None;
+pub const PROJECTION_SIZE: f32 = 50.0 * 1.0;
+pub const SCALE_MODE: ScalingMode = ScalingMode::FixedVertical(PROJECTION_SIZE * 2.0);
 
 pub struct CameraSetupPlugin;
 
@@ -30,7 +30,7 @@ impl Plugin for CameraSetupPlugin {
     }
 }
 
-fn camera_init_system(mut commands: Commands) {
+pub fn camera_init_system(mut commands: Commands) {
     let mut camera = Camera2dBundle::default();
 
     camera.projection.right = PROJECTION_SIZE * RESOLUTION;

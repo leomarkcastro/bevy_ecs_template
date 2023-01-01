@@ -5,7 +5,11 @@ use bevy::prelude::*;
 
 use crate::entity_factory::{
     entities::{
-        inject_entities, playerv1::systems::plaverv1_spawn, playerv2::systems::plaverv2_spawn,
+        blockv1::systems::blockv1_spawn, blockv2::systems::blockv2_spawn,
+        blockv3::systems::blockv3_spawn, inject_entities,
+        pickupablev1::systems::pickupablev1_spawn, playerv1::systems::plaverv1_spawn,
+        playerv2::systems::plaverv2_spawn, polygonv1::systems::polygonv1_spawn,
+        polygonv2::systems::polygonv2_spawn, room::systems::roomv1_spawn,
         ui::screen::simple_text::systems::simple_text_spawn, zombiesv1::systems::zombiesv1_spawn,
     },
     factory::data::{GameEntity, UIEntity},
@@ -59,6 +63,13 @@ fn factory_system(mut commands: Commands, mut spawn_entity_events: EventReader<S
             PlayerV1 => plaverv1_spawn(&mut commands, event),
             PlayerV2 => plaverv2_spawn(&mut commands, event),
             Zombiesv1 => zombiesv1_spawn(&mut commands, event),
+            Pickupablev1 => pickupablev1_spawn(&mut commands, event),
+            Blockv1 => blockv1_spawn(&mut commands, event),
+            Blockv2 => blockv2_spawn(&mut commands, event),
+            Blockv3 => blockv3_spawn(&mut commands, event),
+            Polygonv1 => polygonv1_spawn(&mut commands, event),
+            Polygonv2 => polygonv2_spawn(&mut commands, event),
+            Roomv1 => roomv1_spawn(&mut commands, event),
             _ => {}
         }
     }

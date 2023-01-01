@@ -18,6 +18,7 @@ use crate::{
                     components::PXMovableComponent,
                     systems::{insert_physics_components, PhysicsFeature},
                 },
+                proximity::components::ProximityDataComponent,
                 static_movable::components::MovableComponent,
             },
             projectiles::components::{ProjectileEffect, ProjectileEntity, SpawnProjectileEvent},
@@ -41,11 +42,13 @@ impl Plugin for Playerv2Plugin {
     }
 }
 
+const PLAYER_SIZE: f32 = 10.0;
+
 pub fn plaverv2_spawn(mut commands: &mut Commands, spawn_entity_event: &SpawnEntityEvent) {
     let mut body = commands.spawn(SpriteBundle {
         sprite: Sprite {
             color: Color::rgb(0.0, 0.0, 1.0),
-            custom_size: Some(Vec2::new(10.0, 10.0)),
+            custom_size: Some(Vec2::new(PLAYER_SIZE, PLAYER_SIZE)),
             ..Default::default()
         },
         transform: Transform {
@@ -74,11 +77,18 @@ pub fn plaverv2_spawn(mut commands: &mut Commands, spawn_entity_event: &SpawnEnt
         })
         .insert(AIDetectionData::default());
 
+    // Proximity
+    body.insert(ProximityDataComponent {
+        triggerer_type: AITeam::Player,
+
+        ..Default::default()
+    });
+
     // Physics
     insert_physics_components(
         &mut body,
         PhysicsFeature {
-            size: Some(Vec2::new(5.0, 5.0)),
+            size: Some(Vec2::new(PLAYER_SIZE / 2., PLAYER_SIZE / 2.)),
             body_type: Some(CollidableBody::Player),
             ..Default::default()
         },

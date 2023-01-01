@@ -4,13 +4,15 @@
 mod entity_factory;
 mod game_modules;
 mod scene_manager;
+mod utils;
 
 use bevy::prelude::*;
 use bevy_inspector_egui::WorldInspectorPlugin;
 use entity_factory::factory::systems::EntityFactoryPlugin;
 use game_modules::{
     camera::systems::CameraSetupPlugin, controllable::systems::ControllablePlugin,
-    face_axis::systems::FaceAxisPlugin, save_load::systems::SaveLoadFactoryPlugin,
+    face_axis::systems::FaceAxisPlugin, global_event::systems::GlobalEventPlugin,
+    map_loader::systems::MapLoaderPlugin, save_load::systems::SaveLoadFactoryPlugin,
     shaders::systems::ShadersPlugin, timers::systems::TimersPlugin,
 };
 use scene_manager::manager::systems::SceneManagerPlugin;
@@ -37,6 +39,8 @@ fn main() {
                 }),
         )
         .add_plugin(WorldInspectorPlugin::new())
+        .add_plugin(MapLoaderPlugin)
+        .add_plugin(GlobalEventPlugin)
         .add_plugin(SaveLoadFactoryPlugin)
         .add_plugin(TimersPlugin)
         .add_plugin(ControllablePlugin)

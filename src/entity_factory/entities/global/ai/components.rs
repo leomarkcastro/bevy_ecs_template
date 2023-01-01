@@ -14,7 +14,7 @@ pub enum AIMode {
     Flee,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum AITeam {
     Player,
     PlayerEquipment,
@@ -26,6 +26,10 @@ pub enum AITeam {
     Monsters,
     Animals,
     Neutral,
+    All,
+    None,
+    Pickupable,
+    Mission,
 }
 
 #[derive(Component, Debug, Clone)]
