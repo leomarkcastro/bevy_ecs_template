@@ -8,7 +8,10 @@ use bevy::{
 use bevy_prototype_lyon::prelude::DrawMode;
 
 use crate::{
-    entity_factory::entities::global::despawn::components::DespawnComponent,
+    entity_factory::entities::global::{
+        despawn::components::DespawnComponent,
+        despawn_on_clock::components::DespawnWithTimerComponent,
+    },
     game_modules::{
         global_event::systems::GlobalEvent,
         map_loader::data::{RoomData, RoomType},
@@ -101,7 +104,7 @@ pub enum GameEntityData {
         on_pickup: GlobalEvent,
     },
     Blockv3 {
-        data: DespawnComponent,
+        despawn_data: DespawnComponent,
     },
     Polygonv1 {
         path: Vec<Vec2>,
@@ -115,6 +118,11 @@ pub enum GameEntityData {
     },
     Roomv1 {
         room_type: RoomType,
+        despawn_data: DespawnComponent,
+    },
+    Block {
+        no_physic: bool,
+        despawn_timer_data: DespawnWithTimerComponent,
     },
 }
 

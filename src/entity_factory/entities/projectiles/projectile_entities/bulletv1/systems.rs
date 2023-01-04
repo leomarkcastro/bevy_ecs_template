@@ -1,7 +1,7 @@
 // To describe how the Bulletv1 component/entity should behave.
 // WILL: contain pure logic that interacts with the component
 
-use bevy::{math::Vec3Swizzles, prelude::*};
+use bevy::{ecs::system::EntityCommands, math::Vec3Swizzles, prelude::*};
 use bevy_rapier2d::prelude::{CollidingEntities, Velocity};
 
 use crate::entity_factory::{
@@ -28,7 +28,7 @@ impl Plugin for Bulletv1Plugin {
     }
 }
 
-pub fn bulletv1_spawn(mut commands: &mut Commands, spawn_entity_event: &SpawnProjectileEvent) {
+pub fn bulletv1_spawn(mut body: &mut EntityCommands, spawn_entity_event: &SpawnProjectileEvent) {
     // move at asset from current position
     let transform_xy = spawn_entity_event.source.unwrap_or_default().xyy().xy();
 
@@ -50,14 +50,14 @@ pub fn bulletv1_spawn(mut commands: &mut Commands, spawn_entity_event: &SpawnPro
     //     "spawn {:?}",
     //     spawn_entity_event.rotation.unwrap_or_default()
     // );
-    let mut body = commands.spawn(SpriteBundle {
+    body.insert(SpriteBundle {
         sprite: Sprite {
             color: Color::rgb(1.0, 0.0, 0.0),
             custom_size: Some(Vec2::new(1.0, 1.0)),
             ..Default::default()
         },
         transform: Transform {
-            translation: transform_xy_with_angle.extend(0.0),
+            translation: transform_xy_with_angle.extend(40.0),
             rotation: rotation,
             ..Default::default()
         },

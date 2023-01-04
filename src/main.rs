@@ -6,13 +6,17 @@ mod game_modules;
 mod scene_manager;
 mod utils;
 
-use bevy::prelude::*;
+use bevy::{
+    diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
+    prelude::*,
+};
 use bevy_inspector_egui::WorldInspectorPlugin;
 use entity_factory::factory::systems::EntityFactoryPlugin;
 use game_modules::{
     camera::systems::CameraSetupPlugin, controllable::systems::ControllablePlugin,
     face_axis::systems::FaceAxisPlugin, global_event::systems::GlobalEventPlugin,
-    map_loader::systems::MapLoaderPlugin, save_load::systems::SaveLoadFactoryPlugin,
+    map_loader::systems::MapLoaderPlugin, pan_camera::systems::PanCameraPlugin,
+    path_finding::system::PathFindingServerPlugin, save_load::systems::SaveLoadFactoryPlugin,
     shaders::systems::ShadersPlugin, timers::systems::TimersPlugin,
 };
 use scene_manager::manager::systems::SceneManagerPlugin;
@@ -38,14 +42,18 @@ fn main() {
                     ..default()
                 }),
         )
+        // .add_plugin(LogDiagnosticsPlugin::default())
+        // .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(MapLoaderPlugin)
+        .add_plugin(PathFindingServerPlugin)
         .add_plugin(GlobalEventPlugin)
         .add_plugin(SaveLoadFactoryPlugin)
         .add_plugin(TimersPlugin)
         .add_plugin(ControllablePlugin)
         .add_plugin(FaceAxisPlugin)
         .add_plugin(CameraSetupPlugin)
+        .add_plugin(PanCameraPlugin) // Debug Purpose
         .add_plugin(ShadersPlugin)
         .add_plugin(EntityFactoryPlugin)
         .add_plugin(SceneManagerPlugin)

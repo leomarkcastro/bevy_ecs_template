@@ -8,7 +8,7 @@ use bevy_inspector_egui::RegisterInspectable;
 
 use crate::{
     entity_factory::entities::playerv2::entities::Playerv2Entity,
-    game_modules::timers::components::OneSecondTimer,
+    game_modules::{pan_camera::components::PanOrbitCamera, timers::components::OneSecondTimer},
 };
 
 use super::components::{CameraFollowable, CameraMode, CameraResource};
@@ -41,7 +41,9 @@ pub fn camera_init_system(mut commands: Commands) {
 
     camera.projection.scaling_mode = SCALE_MODE;
 
-    commands.spawn(camera);
+    commands.spawn(camera).insert(PanOrbitCamera {
+        ..Default::default()
+    });
 }
 
 fn camera_follow_system(

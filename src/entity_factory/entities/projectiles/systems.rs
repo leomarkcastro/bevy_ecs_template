@@ -23,8 +23,9 @@ fn projectiles_system(
     mut spawn_entity_events: EventReader<SpawnProjectileEvent>,
 ) {
     for event in spawn_entity_events.iter() {
+        let mut basebody = commands.spawn_empty();
         match event.projectile_type {
-            ProjectileEntity::Bulletv1 => bulletv1_spawn(&mut commands, event),
+            ProjectileEntity::Bulletv1 => bulletv1_spawn(&mut basebody, event),
             _ => {}
         }
     }

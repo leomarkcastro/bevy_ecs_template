@@ -30,7 +30,7 @@ use crate::{
         camera::components::{CameraFollowable, CameraMode, CameraResource},
         controllable::components::ControllableResource,
         global_event::systems::GlobalEvent,
-        map_loader::{boracay::BoracayMapPlugin, systems::MapDataResource},
+        map_loader::{boracay::BoracayMapPlugin, data::RoomType, systems::MapDataResource},
         save_load::{data::GlobalSaveData, systems::TriggerSaveLoadEvevnt},
         shaders::simple_point_light::components::{CoolMaterial, CoolMaterialUniformInput},
         timers::components::OneSecondTimer,
@@ -57,14 +57,11 @@ impl Default for Scene03Globals {
     }
 }
 
-const MAP_SCALE: f32 = 0.02;
-
 pub struct Scene03Plugin;
 
 impl Plugin for Scene03Plugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(Scene03Globals::default())
-            .add_plugin(ShapePlugin)
             .add_plugin(BoracayMapPlugin)
             .add_system_set(
                 SystemSet::on_enter(GameScene::Scene03).with_system(scene03_init_system),
@@ -217,6 +214,18 @@ fn scene03_run_system(
     //         ..Default::default()
     //     });
     //     scene_global.wall_counter += 1;
+    // }
+
+    // if (controllable_component.btn_b.pressed) {
+    //     spawn_entity_events.send(SpawnEntityEvent {
+    //         entity: GameEntity::Roomv1,
+    //         entity_data: Some(GameEntityData::Roomv1 {
+    //             room_type: RoomType::House,
+    //         }),
+    //         position: Some(Vec3::from([0.0, 0.0, 0.0])),
+    //         size: Some(Vec2::from([100.0, 100.0])),
+    //         ..Default::default()
+    //     });
     // }
 
     if (controllable_component.btn_c.pressed) {

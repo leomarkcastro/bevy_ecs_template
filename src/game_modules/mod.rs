@@ -1,3 +1,4 @@
+pub mod pan_camera;
 pub mod camera;
 pub mod controllable;
 pub mod face_axis;
@@ -6,3 +7,4 @@ pub mod map_loader;
 pub mod save_load;
 pub mod shaders;
 pub mod timers;
+pub mod path_finding;

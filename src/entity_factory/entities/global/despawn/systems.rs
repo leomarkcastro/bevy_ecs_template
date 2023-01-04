@@ -3,7 +3,7 @@
 
 use bevy::prelude::*;
 
-use crate::utils::check_2circle_collide::{check_2circle_collide, CircleCollideData};
+use crate::utils::check_collide::{check_2circle_collide, CircleCollideData};
 
 use super::DespawnComponent;
 

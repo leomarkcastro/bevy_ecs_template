@@ -73,7 +73,7 @@ pub struct AIDetectionData {
 impl Default for AIDetectionData {
     fn default() -> Self {
         Self {
-            detection_radius: 50.0,
+            detection_radius: 100.0,
         }
     }
 }

@@ -1,7 +1,7 @@
 // To describe how the Polygonv2 component/entity should behave.
 // WILL: contain pure logic that interacts with the component
 
-use bevy::prelude::*;
+use bevy::{ecs::system::EntityCommands, prelude::*};
 use bevy_prototype_lyon::prelude::{DrawMode, FillMode, GeometryBuilder, PathBuilder, StrokeMode};
 use bevy_rapier2d::prelude::RigidBody;
 
@@ -22,7 +22,7 @@ impl Plugin for Polygonv2Plugin {
     fn build(&self, app: &mut App) {}
 }
 
-pub fn polygonv2_spawn(mut commands: &mut Commands, spawn_entity_event: &SpawnEntityEvent) {
+pub fn polygonv2_spawn(mut body: &mut EntityCommands, spawn_entity_event: &SpawnEntityEvent) {
     let data = spawn_entity_event.entity_data.as_ref();
 
     match data {
@@ -46,7 +46,7 @@ pub fn polygonv2_spawn(mut commands: &mut Commands, spawn_entity_event: &SpawnEn
                 index += 1;
             }
 
-            let mut body = commands.spawn(GeometryBuilder::build_as(
+            body.insert(GeometryBuilder::build_as(
                 &line,
                 style.to_owned(),
                 Transform {

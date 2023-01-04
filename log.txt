@@ -1,0 +1,43 @@
+[2m2023-01-03T12:10:25.473628Z[0m [32m INFO[0m [2mbevy_render::renderer[0m[2m:[0m AdapterInfo { name: "AMD Radeon (TM) Graphics", vendor: 4098, device: 5607, device_type: IntegratedGpu, driver: "AMD proprietary driver", driver_info: "21.40.56", backend: Vulkan }
+Boracay island spawn
+Boracay road spawn
+Loaded path data [* 163133] [-> 163133]
+Scene03 init
+doing a scan
+path length: 979
+doing a scan
+path length: 984
+doing a scan
+path length: 990
+doing a scan
+path length: 986
+doing a scan
+path length: 986
+doing a scan
+path length: 999
+doing a scan
+path length: 1001
+doing a scan
+path length: 999
+doing a scan
+path length: 1002
+doing a scan
+path length: 1001
+doing a scan
+path length: 1001
+doing a scan
+path length: 998
+doing a scan
+path length: 998
+doing a scan
+path length: 997
+doing a scan
+path length: 976
+doing a scan
+path length: 976
+doing a scan
+path length: 977
+doing a scan
+path length: 977
+doing a scan
+path length: 976

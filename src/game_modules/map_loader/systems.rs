@@ -5,15 +5,20 @@ use std::fs::read_to_string;
 
 use bevy::{
     prelude::*,
-    tasks::{IoTaskPool, Task},
+    tasks::{AsyncComputeTaskPool, Task},
 };
 use bevy_rapier2d::na::Point;
+use futures_lite::future;
 use knn::PointCloud;
 use serde_json::Map;
 
 use crate::game_modules::timers::components::{OneSecondTimer, ThreeSecondTimer};
 
-use super::data::{MapData, RoomData};
+use kdtree::distance::squared_euclidean;
+use kdtree::ErrorKind;
+use kdtree::KdTree;
+
+use super::data::{MapData, PathData, RoomData};
 
 #[derive(Resource)]
 pub struct MapDataResource {
@@ -25,14 +30,28 @@ pub struct RoomDataResource {
     pub room_data: Option<RoomData>,
 }
 
+#[derive(Resource)]
+pub struct PathDataResource {
+    pub path_data: Option<PathData>,
+    pub kdtree: Option<KdTree<f32, usize, [f32; 2]>>,
+    pub kdtree_task: Option<Task<KdTree<f32, usize, [f32; 2]>>>,
+}
+
 pub struct MapLoaderPlugin;
 
 impl Plugin for MapLoaderPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(MapDataResource { map_data: None })
             .insert_resource(RoomDataResource { room_data: None })
+            .insert_resource(PathDataResource {
+                path_data: None,
+                kdtree: None,
+                kdtree_task: None,
+            })
             .add_startup_system(map_loader_system)
-            .add_startup_system(room_loader_system);
+            .add_startup_system(path_loader_system)
+            .add_startup_system(room_loader_system)
+            .add_system(async_resolution_system);
         // .add_system(map_knn_test_system);
     }
 }
@@ -75,35 +94,56 @@ pub fn room_loader_system(mut room_data: ResMut<RoomDataResource>) {
     }
 }
 
-pub fn map_knearest(
-    map_data: &Res<MapDataResource>,
-    point: &Vec2,
-    k: usize,
-) -> Vec<(f64, (f64, f64, String))> {
-    let distance_function =
-        |p: &(f64, f64, &str), q: &(f64, f64, &str)| (q.0 - p.0).abs() + (q.1 - p.1).abs();
-    let mut pc = PointCloud::new(distance_function);
-    let md = map_data.map_data.as_ref().unwrap();
-    let center_points: Vec<(f64, f64, &str)> = md
-        .buildings
-        .iter()
-        .map(|building| {
-            let center = building.center;
-            (center.x as f64, center.y as f64, building.id.as_str())
-        })
-        .collect();
-    for i in 0..center_points.len() {
-        pc.add_point(&center_points[i]);
-    }
+pub fn path_loader_system(mut path_data: ResMut<PathDataResource>) {
+    // load map data json from asset server
 
-    let points = pc.get_nearest_k(&(point.x as f64, point.y as f64, ""), k);
-    let mut result: Vec<(f64, (f64, f64, String))> = Vec::new();
-    for i in 0..points.len() {
-        let p = points[i];
-        result.push((p.0, (p.1 .0, p.1 .1, p.1 .2.to_string())));
-    }
+    let data =
+        read_to_string(format!("assets/maps/boracay_path.json")).expect("Unable to load room file");
 
-    result
+    let loaded_data: Result<PathData, _> = serde_json::from_str(&data);
+
+    match loaded_data {
+        Ok(loaded_data) => {
+            println!(
+                "Loaded path data [* {}] [-> {}]",
+                loaded_data.points.len(),
+                loaded_data.vertices.len()
+            );
+            path_data.path_data = Some(loaded_data);
+
+            let points_clone = path_data.path_data.as_mut().unwrap().points.clone();
+
+            let task = AsyncComputeTaskPool::get().spawn(async move {
+                let mut kdtree = KdTree::new(2);
+
+                for i in 0..points_clone.len() {
+                    let point = points_clone[i];
+                    kdtree.add([point.x, point.y], i).unwrap_or(());
+                }
+                println!("KdTree build done");
+                kdtree
+            });
+
+            path_data.kdtree_task = Some(task);
+
+            // get the result of the task
+            // path_data.kdtree = Some(task.get(0).unwrap().clone());
+        }
+        Err(e) => {
+            println!("Error: {}", e);
+        }
+    }
+}
+
+fn async_resolution_system(mut path_data: ResMut<PathDataResource>) {
+    let task = path_data.kdtree_task.as_mut();
+    if task.is_some() {
+        if let Some(data) = future::block_on(future::poll_once(task.unwrap())) {
+            println!("KdTree loaded with {} points", data.size());
+            path_data.kdtree_task = None;
+            path_data.kdtree = Some(data);
+        }
+    }
 }
 
 fn map_knn_test_system(
@@ -111,10 +151,10 @@ fn map_knn_test_system(
     time: Res<Time>,
     mut one_sec_timer: ResMut<ThreeSecondTimer>,
 ) {
-    if one_sec_timer.event_timer.tick(time.delta()).finished() {
-        println!(
-            "KNN test: {:?}",
-            map_knearest(&map_data, &Vec2 { x: 6., y: 6. }, 30)
-        );
-    }
+    // if one_sec_timer.event_timer.tick(time.delta()).finished() {
+    //     println!(
+    //         "KNN test: {:?}",
+    //         map_knearest(&map_data, &Vec2 { x: 6., y: 6. }, 30)
+    //     );
+    // }
 }

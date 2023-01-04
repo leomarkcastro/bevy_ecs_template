@@ -3,20 +3,42 @@
 
 use crate::{
     entity_factory::{
-        entities::global::{
-            despawn::{components::DespawnComponent, systems::DespawnTrackerGlobal},
-            physics_movable::components::PXMovableComponent,
+        entities::{
+            global::{
+                despawn::{components::DespawnComponent, systems::DespawnTrackerGlobal},
+                despawn_on_clock::components::DespawnWithTimerComponent,
+                physics_movable::components::{PXMovableComponent, PXSize},
+            },
+            playerv2::entities::Playerv2Entity,
         },
         factory::data::{GameEntity, GameEntityData, SpawnEntityEvent},
     },
-    game_modules::camera::systems::camera_init_system,
-    utils::check_2circle_collide::{check_2circle_collide, CircleCollideData},
+    game_modules::{
+        camera::systems::camera_init_system,
+        controllable::components::ControllableResource,
+        pan_camera::components::PanOrbitCamera,
+        path_finding::components::{GraphPoint, PathFindProcessResource, PathFindQueryEvent},
+        timers::components::ThreeSecondTimer,
+    },
+    utils::{
+        check_collide::{check_2circle_collide, CircleCollideData},
+        globals::MAP_SCALE,
+    },
 };
 
-use super::systems::{map_knearest, map_loader_system, MapDataResource};
-use bevy::{math::Vec3Swizzles, prelude::*};
-use bevy_prototype_lyon::prelude::{DrawMode, FillMode, GeometryBuilder, PathBuilder, StrokeMode};
+use super::{
+    data::RoomType,
+    systems::{map_loader_system, path_loader_system, MapDataResource, PathDataResource},
+};
+use bevy::{math::Vec3Swizzles, prelude::*, render::camera::RenderTarget};
+use bevy_prototype_lyon::{
+    prelude::{DrawMode, FillMode, GeometryBuilder, PathBuilder, StrokeMode},
+    shapes,
+};
 use bevy_rapier2d::prelude::{ActiveEvents, Collider, RigidBody, Velocity};
+use kdtree::distance::squared_euclidean;
+use pathfinding::prelude::{astar, bfs, dijkstra};
+use rand::Rng;
 use rayon::prelude::*;
 
 #[derive(Resource)]
@@ -25,6 +47,13 @@ struct BoracayMapGlobals {
     mntn_cam_pos: Option<Vec2>,
     frst_cam_pos: Option<Vec2>,
     road_cam_pos: Option<Vec2>,
+}
+
+#[derive(Resource)]
+struct TestTargetIndex {
+    start: u32,
+    end: u32,
+    query_id: String,
 }
 
 impl Default for BoracayMapGlobals {
@@ -38,15 +67,19 @@ impl Default for BoracayMapGlobals {
     }
 }
 
-const MAP_SCALE: f32 = 2.0;
-const TRIGGER_SPAWN_RADIUS: f32 = 100.0 * MAP_SCALE;
-const SPAWN_RADIUS: f32 = 300.0 * MAP_SCALE;
+const TRIGGER_SPAWN_RADIUS: f32 = 50.0 * MAP_SCALE;
+const SPAWN_RADIUS: f32 = TRIGGER_SPAWN_RADIUS * 2. * MAP_SCALE;
 
 pub struct BoracayMapPlugin;
 
 impl Plugin for BoracayMapPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(BoracayMapGlobals::default())
+            .insert_resource(TestTargetIndex {
+                start: 0,
+                end: 10,
+                query_id: "".to_string(),
+            })
             .add_startup_system(boracay_island_spawn_system.after(map_loader_system))
             // .add_startup_system(boracay_building_spawn_system.after(boracay_island_spawn_system))
             // .add_startup_system(boracay_mountain_spawn_system.after(boracay_island_spawn_system))
@@ -124,11 +157,32 @@ fn boracay_bldg_stream_system(
     for building in &to_loop {
         despawn_tracker.spawned_id.push(building.id.clone());
         // println!("Spawned: {}", building.id);
+        // spawn_entity_events.send(SpawnEntityEvent {
+        //     entity: GameEntity::Blockv3,
+        //     entity_data: Some(GameEntityData::Blockv3 {
+        //         data: DespawnComponent {
+        //             camera_circle: SPAWN_RADIUS * 1.5,
+        //             bldg_circle: building.radius * MAP_SCALE,
+        //             id: building.id.clone(),
+        //         },
+        //     }),
+        //     position: Some(
+        //         (building.center.extend(0.5) * MAP_SCALE)
+        //             * Vec3 {
+        //                 x: 1.0,
+        //                 y: -1.0,
+        //                 z: 1.0,
+        //             },
+        //     ),
+        //     size: Some(Vec2::new(building.width, building.height) * MAP_SCALE),
+        //     ..Default::default()
+        // });
         spawn_entity_events.send(SpawnEntityEvent {
-            entity: GameEntity::Blockv3,
-            entity_data: Some(GameEntityData::Blockv3 {
-                data: DespawnComponent {
-                    camera_circle: SPAWN_RADIUS * 1.5,
+            entity: GameEntity::Roomv1,
+            entity_data: Some(GameEntityData::Roomv1 {
+                room_type: RoomType::House,
+                despawn_data: DespawnComponent {
+                    camera_circle: SPAWN_RADIUS * 1.0,
                     bldg_circle: building.radius * MAP_SCALE,
                     id: building.id.clone(),
                 },
@@ -397,7 +451,7 @@ fn boracay_road_stream_system(
             (check_2circle_collide(
                 CircleCollideData {
                     center: camera_xy,
-                    radius: SPAWN_RADIUS,
+                    radius: SPAWN_RADIUS * 2.0,
                 },
                 CircleCollideData {
                     center: bldg_center,
@@ -430,7 +484,7 @@ fn boracay_road_stream_system(
                     outline_mode: StrokeMode::new(Color::rgb(0.2, 0.2, 0.2), MAP_SCALE * 10.),
                 },
                 despawn: DespawnComponent {
-                    camera_circle: SPAWN_RADIUS * 1.5,
+                    camera_circle: SPAWN_RADIUS * 2.0 * 1.5,
                     bldg_circle: road.radius * MAP_SCALE,
                     id: road.id.clone(),
                 },
@@ -542,6 +596,296 @@ fn boracay_island_spawn_system(
     //     index_list.as_slice(),
     // ));
 }
+
+fn old_boracay_points_spawn_system(
+    path_data: Res<PathDataResource>,
+    target_data: Res<TestTargetIndex>,
+    mut spawn_entity_events: EventWriter<SpawnEntityEvent>,
+    time: Res<Time>,
+    mut three_sec_timer: ResMut<ThreeSecondTimer>,
+    collidables: Query<(&PXSize, &GlobalTransform)>,
+    player_query: Query<(&PXSize, &GlobalTransform), With<Playerv2Entity>>,
+) {
+    if !three_sec_timer.event_timer.tick(time.delta()).finished() {
+        return;
+    }
+    println!("doing a scan");
+
+    let map_data = path_data.path_data.as_ref().unwrap();
+    let points = &map_data.points;
+    let vertices = &map_data.vertices;
+    let point_length = points.len();
+
+    // generate random number
+    // let mut rng = rand::thread_rng();
+    // let random_number_a = rng.gen_range(0..point_length as u32);
+    // let random_number_b = rng.gen_range(0..point_length as u32);
+    // let random_number_a = point_length as u32 - 1;
+    let mut random_number_a = target_data.start;
+    // let random_number_b = point_length as u32 - 7000;
+    let mut random_number_b = target_data.end;
+
+    if let Ok((_, pl_gtransform)) = player_query.get_single() {
+        let nearest_point = path_data.kdtree.as_ref();
+
+        if nearest_point.is_some() {
+            let min = pl_gtransform.to_scale_rotation_translation().2.truncate();
+            let np = nearest_point
+                .unwrap()
+                .nearest(
+                    &[min.x / MAP_SCALE, min.y / MAP_SCALE],
+                    1,
+                    &squared_euclidean,
+                )
+                .unwrap_or_default();
+
+            random_number_a = np[0].1.to_owned() as u32;
+
+            println!("Nearest point [player]: {:?}", np);
+        }
+    }
+
+    random_number_a = 0;
+    random_number_b = 10000;
+
+    // get the first player position
+
+    let start: GraphPoint = GraphPoint(random_number_a as u32);
+    let goal: GraphPoint = GraphPoint(random_number_b as u32);
+
+    // get iterable of collidables
+    let collidables = collidables.iter().collect::<Vec<_>>();
+
+    // get the box of the collidables
+    let collidables_box = collidables
+        .iter()
+        .map(|(collider, gtransform)| {
+            // get the translation, scale of globaltransform
+
+            let min = gtransform.to_scale_rotation_translation().2.truncate() / MAP_SCALE;
+            let rotation_quat = gtransform.to_scale_rotation_translation().1;
+
+            let max = Vec2::from((collider.width, collider.height)) / (2.);
+            // rotate the collider, get the rotation Vec2
+
+            let target_asset_angle =
+                rotation_quat.to_axis_angle().1 * rotation_quat.to_axis_angle().0.z;
+            // convert f32 to vec2
+            let rotation = Vec2::new(target_asset_angle.cos(), target_asset_angle.sin());
+
+            let collider = max.rotate(rotation);
+            (min, max)
+        })
+        .collect::<Vec<_>>();
+
+    /*
+    let result_a = bfs(&start, |p| p.successors(map_data), |p| *p == goal);
+
+    match result_a {
+        Some(path) => {
+            for point in path {
+                let loc = point_locaitons[point.0 as usize];
+                spawn_entity_events.send(SpawnEntityEvent {
+                    entity: GameEntity::Blockv1,
+                    entity_data: Some(GameEntityData::Block { no_physic: true }),
+                    position: Some(
+                        (loc.extend(0.5) * MAP_SCALE)
+                            * Vec3 {
+                                x: 1.0,
+                                y: 1.0,
+                                z: 100.0,
+                            },
+                    ),
+                    size: Some(Vec2::new(5.0, 5.0) * MAP_SCALE),
+                    ..Default::default()
+                });
+            }
+        }
+        None => println!("No path found"),
+    }
+
+    */
+    if start != goal {
+        let result_b = astar(
+            &start,
+            |p| p.successors_weighted_collissioned(points, vertices, &collidables_box),
+            |p| p.distance(points, random_number_b as u32) as usize,
+            |p| *p == goal,
+        );
+
+        match result_b {
+            Some((path, len)) => {
+                for point in path {
+                    let loc = points[point.0 as usize];
+                    let current_time = time.elapsed_seconds();
+                    // get current time after 5 seconds
+                    let despawn_time = current_time + 2.0;
+                    spawn_entity_events.send(SpawnEntityEvent {
+                        entity: GameEntity::Blockv1,
+                        entity_data: Some(GameEntityData::Block {
+                            no_physic: true,
+                            despawn_timer_data: DespawnWithTimerComponent {
+                                despawn_on: despawn_time,
+                                ..Default::default()
+                            },
+                        }),
+                        position: Some(
+                            (loc.extend(0.5) * MAP_SCALE)
+                                * Vec3 {
+                                    x: 1.0,
+                                    y: 1.0,
+                                    z: 100.0,
+                                },
+                        ),
+                        size: Some(Vec2::new(5.0, 5.0)),
+                        ..Default::default()
+                    });
+                }
+                println!("path length: {}", len);
+            }
+            None => println!("No path found"),
+        }
+    }
+
+    // let shape = shapes::Circle {
+    //     radius: 5.0,
+    //     ..Default::default()
+    // };
+
+    // for point in path_points {
+    //     spawn_entity_events.send(SpawnEntityEvent {
+    //         entity: GameEntity::Blockv1,
+    //         entity_data: Some(GameEntityData::Block { no_physic: true }),
+    //         position: Some(
+    //             (point.extend(0.5) * MAP_SCALE)
+    //                 * Vec3 {
+    //                     x: 1.0,
+    //                     y: 1.0,
+    //                     z: 100.0,
+    //                 },
+    //         ),
+    //         size: Some(Vec2::new(2.0, 2.0) * MAP_SCALE),
+    //         ..Default::default()
+    //     });
+    // }
+    // .insert(Collider::convex_decomposition(
+    //     mountain_1_points.as_slice(),
+    //     index_list.as_slice(),
+    // ));
+}
+
+/*
+fn boracay_points_spawn_system(
+    time: Res<Time>,
+    path_data: Res<PathDataResource>,
+    player_query: Query<(&GlobalTransform), With<Playerv2Entity>>,
+    mut three_sec_timer: ResMut<ThreeSecondTimer>,
+    mut pathfinding_process: ResMut<PathFindProcessResource>,
+    mut pathfind_query: EventWriter<PathFindQueryEvent>,
+    mut target_data: ResMut<TestTargetIndex>,
+    mut spawn_entity_events: EventWriter<SpawnEntityEvent>,
+) {
+    let map_data = path_data.path_data.as_ref().unwrap();
+    let points = &map_data.points;
+
+    if target_data.query_id.len() != 0 {
+        if !pathfinding_process
+            .processess
+            .contains_key(&target_data.query_id)
+        {
+            println!("Process not found");
+            target_data.query_id = "".to_string();
+            return;
+        } else {
+            let process = pathfinding_process
+                .processess
+                .get(&target_data.query_id)
+                .unwrap();
+            if (process.task_buffer.is_some()) {
+                if !three_sec_timer.event_timer.tick(time.delta()).finished() {
+                    return;
+                }
+            } else {
+                match &process.path {
+                    Some(proc_path) => {
+                        let path = process;
+                        // println!(
+                        //     "{:?} -> {:?} -> {:?}",
+                        //     process.start,
+                        //     proc_path.len(),
+                        //     process.goal
+                        // );
+                        for point in proc_path {
+                            let loc = points[point.0 as usize];
+                            let current_time = time.elapsed_seconds();
+                            // get current time after 5 seconds
+                            let despawn_time = current_time + 2.0;
+                            spawn_entity_events.send(SpawnEntityEvent {
+                                entity: GameEntity::Blockv1,
+                                entity_data: Some(GameEntityData::Block {
+                                    no_physic: true,
+                                    despawn_timer_data: DespawnWithTimerComponent {
+                                        despawn_on: despawn_time,
+                                        ..Default::default()
+                                    },
+                                }),
+                                position: Some(
+                                    (loc.extend(0.5) * MAP_SCALE)
+                                        * Vec3 {
+                                            x: 1.0,
+                                            y: 1.0,
+                                            z: 100.0,
+                                        },
+                                ),
+                                size: Some(Vec2::new(7.5, 7.5)),
+                                ..Default::default()
+                            });
+                        }
+                    }
+                    None => println!("not done yet"),
+                }
+                target_data.query_id = "".to_string();
+            }
+        }
+    } else {
+        if !three_sec_timer.event_timer.tick(time.delta()).finished() {
+            return;
+        }
+        println!("doing a scan ({})", target_data.query_id);
+
+        let mut random_number_a = 0;
+        let random_number_b = target_data.end;
+
+        if let Ok((pl_gtransform)) = player_query.get_single() {
+            let nearest_point = path_data.kdtree.as_ref();
+
+            if nearest_point.is_some() {
+                let min = pl_gtransform.to_scale_rotation_translation().2.truncate();
+                let np = nearest_point
+                    .unwrap()
+                    .nearest(
+                        &[min.x / MAP_SCALE, min.y / MAP_SCALE],
+                        1,
+                        &squared_euclidean,
+                    )
+                    .unwrap_or_default();
+
+                random_number_a = np[0].1.to_owned() as u32;
+
+                println!("Nearest point [player]: {:?}", np);
+            }
+        }
+
+        let query = PathFindQueryEvent {
+            start: random_number_a,
+            goal: random_number_b,
+            ..Default::default()
+        };
+        target_data.query_id = query.id.to_string();
+        pathfind_query.send(query);
+    }
+}
+
 
 fn boracay_mountain_spawn_system(mut commands: Commands, map_data: Res<MapDataResource>) {
     println!("Boracay mountain spawn");
@@ -678,3 +1022,90 @@ fn boracay_road_spawn_system(mut commands: Commands, map_data: Res<MapDataResour
         ));
     }
 }
+
+fn my_cursor_system(
+    // need to get window dimensions
+    wnds: Res<Windows>,
+    // query to get camera transform
+    q_camera: Query<(&Camera, &GlobalTransform), With<PanOrbitCamera>>,
+    mut spawn_entity_events: EventWriter<SpawnEntityEvent>,
+    time: Res<Time>,
+    controllable_component: Res<ControllableResource>,
+    path_data: Res<PathDataResource>,
+    mut target_data: ResMut<TestTargetIndex>,
+) {
+    // get the camera info and transform
+    // assuming there is exactly one main camera entity, so query::single() is OK
+    let (camera, camera_transform) = q_camera.single();
+
+    // get the window that the camera is displaying to (or the primary window)
+    let wnd = if let RenderTarget::Window(id) = camera.target {
+        wnds.get(id).unwrap()
+    } else {
+        wnds.get_primary().unwrap()
+    };
+
+    if (controllable_component.btn_a.pressed) {
+        // check if the cursor is inside the window and get its position
+        if let Some(screen_pos) = wnd.cursor_position() {
+            // get the size of the window
+            let window_size = Vec2::new(wnd.width() as f32, wnd.height() as f32);
+
+            // convert screen position [0..resolution] to ndc [-1..1] (gpu coordinates)
+            let ndc = (screen_pos / window_size) * 2.0 - Vec2::ONE;
+
+            // matrix for undoing the projection and camera transform
+            let ndc_to_world =
+                camera_transform.compute_matrix() * camera.projection_matrix().inverse();
+
+            // use it to convert ndc to world-space coordinates
+            let world_pos = ndc_to_world.project_point3(ndc.extend(-1.0));
+
+            // reduce it to a 2D value
+            let world_pos: Vec2 = world_pos.truncate();
+
+            let nearest_point = path_data.kdtree.as_ref();
+
+            if nearest_point.is_some() {
+                let np = nearest_point
+                    .unwrap()
+                    .nearest(
+                        &[world_pos.x / MAP_SCALE, world_pos.y / MAP_SCALE],
+                        1,
+                        &squared_euclidean,
+                    )
+                    .unwrap_or_default();
+
+                target_data.end = np[0].1.to_owned() as u32;
+
+                println!("Nearest point [cursor]: {:?}", np);
+            } else {
+                // let current_time = time.elapsed_seconds();
+                // // get current time after 5 seconds
+                // let despawn_time = current_time + 20.0;
+                // spawn_entity_events.send(SpawnEntityEvent {
+                //     entity: GameEntity::Blockv1,
+                //     entity_data: Some(GameEntityData::Block {
+                //         no_physic: false,
+                //         despawn_timer_data: DespawnWithTimerComponent {
+                //             despawn_on: despawn_time,
+                //             ..Default::default()
+                //         },
+                //     }),
+                //     position: Some(
+                //         (world_pos.extend(0.5))
+                //             * Vec3 {
+                //                 x: 1.0,
+                //                 y: 1.0,
+                //                 z: 100.0,
+                //             },
+                //     ),
+                //     size: Some(Vec2::new(80.0, 40.0) * MAP_SCALE),
+                //     ..Default::default()
+                // });
+            }
+        }
+    }
+}
+
+*/

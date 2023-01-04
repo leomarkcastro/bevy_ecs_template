@@ -1,11 +1,16 @@
 // To describe how the Pickupablev1 component/entity should behave.
 // WILL: contain pure logic that interacts with the component
 
-use bevy::{math::Vec3Swizzles, prelude::*};
+use bevy::{ecs::system::EntityCommands, math::Vec3Swizzles, prelude::*};
+use bevy_rapier2d::prelude::RigidBody;
 
 use crate::{
     entity_factory::{
-        entities::global::proximity::components::ProximityDataComponent,
+        entities::global::{
+            collidable::components::CollidableBody,
+            physics_movable::systems::{insert_physics_components, PhysicsFeature},
+            proximity::components::ProximityDataComponent,
+        },
         factory::data::{GameEntity, GameEntityData, SpawnEntityEvent},
     },
     game_modules::global_event::systems::GlobalEvent,
@@ -21,15 +26,16 @@ impl Plugin for Pickupablev1Plugin {
     }
 }
 
-pub fn pickupablev1_spawn(mut commands: &mut Commands, spawn_entity_event: &SpawnEntityEvent) {
+pub fn pickupablev1_spawn(mut body: &mut EntityCommands, spawn_entity_event: &SpawnEntityEvent) {
     let data = &spawn_entity_event.entity_data;
 
     match data {
         Some(GameEntityData::Pickupablev1 { on_pickup }) => {
-            let mut body = commands.spawn(SpriteBundle {
+            let box_size = spawn_entity_event.size.unwrap_or_default();
+            body.insert(SpriteBundle {
                 sprite: Sprite {
                     color: Color::rgb(1.0, 0.0, 1.0),
-                    custom_size: Some(Vec2::new(10.0, 10.0)),
+                    custom_size: Some(box_size),
                     ..Default::default()
                 },
                 transform: Transform {
@@ -40,11 +46,14 @@ pub fn pickupablev1_spawn(mut commands: &mut Commands, spawn_entity_event: &Spaw
                 ..Default::default()
             });
 
+            // get the hypotenuse of width and height
+            let hypotenuse = (box_size.x.powi(2) + box_size.y.powi(2)).sqrt();
+
             // Base entity
             body.insert(Pickupablev1Entity)
                 .insert(ProximityDataComponent {
                     id: spawn_entity_event.id,
-                    proximity_distance: 10.0,
+                    proximity_distance: hypotenuse,
                     triggers_event: true,
                     trigger_event: on_pickup.clone(),
                     ..Default::default()

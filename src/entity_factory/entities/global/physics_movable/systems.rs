@@ -15,7 +15,10 @@ use crate::entity_factory::entities::{
     projectiles::components::ProjectileEffect,
 };
 
-use super::{components::PXConstantMovement, PXMovableComponent};
+use super::{
+    components::{PXConstantMovement, PXSize},
+    PXMovableComponent,
+};
 
 pub struct PhysicsMovablePlugin;
 
@@ -37,6 +40,7 @@ pub struct PhysicsFeature {
     pub body_type: Option<CollidableBody>,
     pub effect: Option<ProjectileEffect>,
     pub rigidbody_type: Option<RigidBody>,
+    pub record_collidability: bool,
 }
 
 impl Default for PhysicsFeature {
@@ -47,6 +51,7 @@ impl Default for PhysicsFeature {
             body_type: None,
             effect: None,
             rigidbody_type: Some(RigidBody::Dynamic),
+            record_collidability: false,
         }
     }
 }
@@ -65,6 +70,12 @@ pub fn insert_physics_components(ent_com: &mut EntityCommands, features: Physics
         .insert(features.rigidbody_type.unwrap_or_default())
         .insert(Velocity::zero())
         .insert(PXMovableComponent::default());
+    if features.record_collidability {
+        ent_com.insert(PXSize {
+            width: size.x * 2.,
+            height: size.y * 2.,
+        });
+    }
 
     if (features.paths_data.is_some()) {
         let (paths, indices) = features.paths_data.unwrap();

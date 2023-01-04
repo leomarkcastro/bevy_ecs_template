@@ -29,17 +29,20 @@ fn ai_action_system(
     time: Res<Time>,
     mut three_sec_timer: ResMut<ThreeSecondTimer>,
     mut commands: Commands,
-    mut ai_query: Query<(Entity, &mut AIStatus, &Transform), With<AIEntity>>,
-    mut ai_identifier_query: Query<(&AIIdentifier, &Transform), With<AIEntity>>,
-    mut physics_query: Query<(&mut PXMovableComponent, &Transform), With<AIEntity>>,
+    mut ai_query: Query<(Entity, &mut AIStatus, &GlobalTransform), With<AIEntity>>,
+    ai_identifier_query: Query<(&AIIdentifier, &GlobalTransform), With<AIEntity>>,
+    mut physics_query: Query<(&mut PXMovableComponent, &GlobalTransform), With<AIEntity>>,
 ) {
-    for (entity, mut ai_status, &transform) in ai_query.iter_mut() {
+    for (entity, mut ai_status, &current_ai_gtransform) in ai_query.iter_mut() {
         if (!ai_status.active) {
             continue;
         }
+        let current_location = current_ai_gtransform.to_scale_rotation_translation().2;
         match ai_status.mode {
             AIMode::Idle if three_sec_timer.event_timer.tick(time.delta()).finished() => {
-                if let ControlFlow::Break(_) = action_idle_mode(&mut ai_status, transform) {
+                if let ControlFlow::Break(_) =
+                    action_idle_mode(&mut ai_status, &current_ai_gtransform)
+                {
                     continue;
                 }
             }
@@ -50,7 +53,7 @@ fn ai_action_system(
                     duration,
                     &time,
                     path,
-                    transform,
+                    &current_ai_gtransform,
                     ai_status,
                 ) {
                     continue;
@@ -69,7 +72,7 @@ fn ai_action_system(
 
                 let (_, target_transform) = query.unwrap();
 
-                let path = target_transform.translation.xyy().xy();
+                let path = target_transform.to_scale_rotation_translation().2;
 
                 let mut pxmovable = physics_query.get_component_mut::<PXMovableComponent>(entity);
 
@@ -77,8 +80,8 @@ fn ai_action_system(
                 // decrease duration
                 if let Ok(mut pxmovable) = pxmovable {
                     // get distance from current position to target position
-                    let distance_x = path.x - transform.translation.x;
-                    let distance_y = path.y - transform.translation.y;
+                    let distance_x = path.x - current_location.x;
+                    let distance_y = path.y - current_location.y;
 
                     let base_move_speed = 0.8;
 
@@ -98,8 +101,8 @@ fn ai_action_system(
                         }
                     };
 
-                    pxmovable.vec_x = move_speed(transform.translation.x, path.x);
-                    pxmovable.vec_y = move_speed(transform.translation.y, path.y);
+                    pxmovable.vec_x = move_speed(current_location.x, path.x);
+                    pxmovable.vec_y = move_speed(current_location.y, path.y);
                     pxmovable.angle = pxmovable.vec_y.atan2(pxmovable.vec_x);
                 }
             }
@@ -113,12 +116,12 @@ fn ai_action_system(
 }
 
 fn action_patrol_mode(
-    physics_query: &mut Query<(&mut PXMovableComponent, &Transform), With<AIEntity>>,
+    physics_query: &mut Query<(&mut PXMovableComponent, &GlobalTransform), With<AIEntity>>,
     entity: Entity,
     duration: f32,
     time: &Res<Time>,
     path: Vec2,
-    transform: Transform,
+    transform: &GlobalTransform,
     mut ai_status: Mut<AIStatus>,
 ) -> ControlFlow<()> {
     let mut pxmovable = physics_query.get_component_mut::<PXMovableComponent>(entity);
@@ -126,12 +129,13 @@ fn action_patrol_mode(
     // println!("Patrol");
     // decrease duration
     if let Ok(mut pxmovable) = pxmovable {
+        let current_location = transform.to_scale_rotation_translation().2;
         // get distance from current position to target position
-        let distance_x = path.x - transform.translation.x;
-        let distance_y = path.y - transform.translation.y;
+        let distance_x = path.x - current_location.x;
+        let distance_y = path.y - current_location.y;
 
         // check if current position is close to target position or if time duration has passed
-        if (transform.translation.xyy().xy().distance(path) < 1.5) || (duration <= 0.0) {
+        if (current_location.xy().distance(path) < 1.5) || (duration <= 0.0) {
             ai_status.mode = AIMode::Idle;
             pxmovable.vec_x = 0.0;
             pxmovable.vec_y = 0.0;
@@ -157,18 +161,24 @@ fn action_patrol_mode(
             }
         };
 
-        pxmovable.vec_x = move_speed(transform.translation.x, path.x);
-        pxmovable.vec_y = move_speed(transform.translation.y, path.y);
+        pxmovable.vec_x = move_speed(current_location.x, path.x);
+        pxmovable.vec_y = move_speed(current_location.y, path.y);
         pxmovable.angle = pxmovable.vec_y.atan2(pxmovable.vec_x);
     }
     ControlFlow::Continue(())
 }
 
-fn action_idle_mode(ai_status: &mut Mut<AIStatus>, transform: Transform) -> ControlFlow<()> {
+fn action_idle_mode(
+    ai_status: &mut Mut<AIStatus>,
+    current_ai_gtransform: &GlobalTransform,
+) -> ControlFlow<()> {
     if (!ai_status.can_move) {
         return ControlFlow::Break(());
     }
-    let start = transform.translation.xyy().xy();
+    let start = current_ai_gtransform
+        .to_scale_rotation_translation()
+        .2
+        .truncate();
     let mut rand_x = rand::random::<f32>() * -10.0 + 5.0;
     let mut rand_y = rand::random::<f32>() * -10.0 + 5.0;
     rand_x = rand_x * 5.;
@@ -191,13 +201,15 @@ fn action_idle_mode(ai_status: &mut Mut<AIStatus>, transform: Transform) -> Cont
 }
 
 fn ai_detection_system(
-    mut ai_query: Query<(&AIIdentifier, &mut AIStatus, &Transform), With<AIEntity>>,
-    ai_b_query: Query<(&AIIdentifier, &AIDetectionData, &Transform), With<AIEntity>>,
+    mut ai_query: Query<(&AIIdentifier, &mut AIStatus, &GlobalTransform), With<AIEntity>>,
+    ai_b_query: Query<(&AIIdentifier, &AIDetectionData, &GlobalTransform), With<AIEntity>>,
 ) {
-    for (identifier, mut ai_status, &transform) in ai_query.iter_mut() {
+    for (identifier, mut ai_status, &ai_gtransform) in ai_query.iter_mut() {
         if ai_status.active == false {
             continue;
         }
+
+        let start = ai_gtransform.to_scale_rotation_translation().2.truncate();
 
         match identifier.team {
             AITeam::Zombies => {
@@ -208,20 +220,24 @@ fn ai_detection_system(
                     }
                     false
                 });
-
+                // return;
                 // check if any player is within detection range
-                for (identifier, detection, player_transform) in player_filter {
-                    let distance = transform
-                        .translation
-                        .xyy()
-                        .xy()
-                        .distance(player_transform.translation.xyy().xy());
+                for (identifier, detection, player_gtransform) in player_filter {
+                    let player_location = player_gtransform
+                        .to_scale_rotation_translation()
+                        .2
+                        .truncate();
+                    let distance = start.distance(player_location);
                     if distance < detection.detection_radius {
                         ai_status.mode = AIMode::Attack {
                             target: identifier.id,
                         };
                         // println!("Zombie has detected player");
                         break;
+                    } else if let AIMode::Attack { target } = ai_status.mode {
+                        if target == identifier.id {
+                            ai_status.mode = AIMode::Idle;
+                        }
                     }
                 }
             }

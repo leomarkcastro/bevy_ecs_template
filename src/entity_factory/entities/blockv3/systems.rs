@@ -1,7 +1,7 @@
 // To describe how the Blockv3 component/entity should behave.
 // WILL: contain pure logic that interacts with the component
 
-use bevy::prelude::*;
+use bevy::{ecs::system::EntityCommands, prelude::*};
 use bevy_rapier2d::prelude::RigidBody;
 
 use crate::entity_factory::{
@@ -21,13 +21,13 @@ impl Plugin for Blockv3Plugin {
     fn build(&self, app: &mut App) {}
 }
 
-pub fn blockv3_spawn(mut commands: &mut Commands, spawn_entity_event: &SpawnEntityEvent) {
+pub fn blockv3_spawn(mut body: &mut EntityCommands, spawn_entity_event: &SpawnEntityEvent) {
     let data = spawn_entity_event.entity_data.as_ref();
 
     match data {
-        Some(GameEntityData::Blockv3 { data }) => {
+        Some(GameEntityData::Blockv3 { despawn_data }) => {
             let box_size = spawn_entity_event.size.unwrap_or_default();
-            let mut body = commands.spawn(SpriteBundle {
+            body.insert(SpriteBundle {
                 sprite: Sprite {
                     color: Color::rgb(0.0, 1.0, 0.0),
                     custom_size: Some(box_size),
@@ -42,9 +42,9 @@ pub fn blockv3_spawn(mut commands: &mut Commands, spawn_entity_event: &SpawnEnti
             });
             // Base entity
             body.insert(Blockv3Entity).insert(DespawnComponent {
-                bldg_circle: data.bldg_circle,
-                camera_circle: data.camera_circle,
-                id: data.id.clone(),
+                bldg_circle: despawn_data.bldg_circle,
+                camera_circle: despawn_data.camera_circle,
+                id: despawn_data.id.clone(),
             });
 
             // Physics

@@ -18,30 +18,32 @@ impl Plugin for ProximityPlugin {
 fn proximity_init_system() {}
 
 fn proximity_system(
-    prox_query: Query<(&ProximityDataComponent, &Transform)>,
+    prox_query: Query<(&ProximityDataComponent, &Transform, &GlobalTransform)>,
     mut global_event_writer: EventWriter<GlobalEvent>,
 ) {
-    for (proximity, transform) in prox_query.iter() {
-        if (!proximity.triggers_event) {
+    for (a_identifier, a_transform, a_gtransform) in prox_query.iter() {
+        if (!a_identifier.triggers_event) {
             continue;
         }
 
         // query all players
-        let b_agent_filter = prox_query
-            .iter()
-            .filter(|(identifier, _)| identifier.triggerer_type == proximity.triggered_by);
+        let b_agent_filter = prox_query.iter().filter(|(identifier, _, _)| {
+            return identifier.triggerer_type == a_identifier.triggered_by;
+        });
 
         // check if any player is within detection range
-        for (identifier, &b_agent_transform) in b_agent_filter {
-            let distance = transform
-                .translation
-                .truncate()
-                .distance(b_agent_transform.translation.truncate());
+        for (b_identifier, &b_transform, b_gtransform) in b_agent_filter {
+            // get the vec3 of a and b from global transform
+            let a_gt = a_gtransform.to_scale_rotation_translation().2;
+            let b_gt = b_gtransform.to_scale_rotation_translation().2;
 
-            if distance < proximity.proximity_distance {
+            let distance = b_gt.truncate().distance(a_gt.truncate());
+
+            // println!("{} {}", distance, a_identifier.proximity_distance);
+            if distance < a_identifier.proximity_distance {
                 global_event_writer.send(GlobalEvent {
-                    event_data: proximity.trigger_event.event_data.clone(),
-                    scene_id: proximity.trigger_event.scene_id.clone(),
+                    event_data: a_identifier.trigger_event.event_data.clone(),
+                    scene_id: a_identifier.trigger_event.scene_id.clone(),
                 });
                 break;
             }

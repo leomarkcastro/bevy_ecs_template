@@ -1,7 +1,7 @@
 // To describe how the Blockv2 component/entity should behave.
 // WILL: contain pure logic that interacts with the component
 
-use bevy::prelude::*;
+use bevy::{ecs::system::EntityCommands, prelude::*};
 
 use crate::entity_factory::{
     entities::global::{
@@ -19,8 +19,8 @@ impl Plugin for Blockv2Plugin {
     fn build(&self, app: &mut App) {}
 }
 
-pub fn blockv2_spawn(mut commands: &mut Commands, spawn_entity_event: &SpawnEntityEvent) {
-    let mut body = commands.spawn(SpriteBundle {
+pub fn blockv2_spawn(mut body: &mut EntityCommands, spawn_entity_event: &SpawnEntityEvent) {
+    body.insert(SpriteBundle {
         sprite: Sprite {
             color: Color::rgb(0.0, 1.0, 0.0),
             custom_size: Some(Vec2::new(10.0, 10.0)),

@@ -22,6 +22,7 @@ pub fn inject_entities(app: &mut App) {
     app.add_plugin(proximity::systems::ProximityPlugin);
     app.add_plugin(ai::systems::AiPlugin);
     app.add_plugin(despawn::systems::DespawnPlugin);
+    app.add_plugin(despawn_on_clock::systems::DespawnWithTimerPlugin);
 
     app.add_plugin(projectiles::systems::ProjectilesPlugin);
     app.add_plugin(playerv2::systems::Playerv2Plugin);

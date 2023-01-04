@@ -1,4 +1,4 @@
-use bevy::prelude::Component;
+use bevy::prelude::{Component, Vec2};
 
 // To be used as data for the physics_movable entity.
 // WILL: contain data describing the current status of its attached entity in its respective domain
@@ -8,6 +8,12 @@ pub struct PXMovableComponent {
     pub vec_x: f32,
     pub vec_y: f32,
     pub angle: f32,
+}
+
+#[derive(Component, Debug)]
+pub struct PXSize {
+    pub width: f32,
+    pub height: f32,
 }
 
 impl Default for PXMovableComponent {

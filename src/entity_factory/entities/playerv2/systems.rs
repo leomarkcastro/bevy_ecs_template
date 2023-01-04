@@ -1,7 +1,7 @@
 // To describe how the Playerv1 component/entity should behave.
 // WILL: contain pure logic that interacts with the component
 
-use bevy::{math::Vec3Swizzles, prelude::*};
+use bevy::{ecs::system::EntityCommands, math::Vec3Swizzles, prelude::*};
 use bevy_rapier2d::prelude::{Collider, CollidingEntities, RigidBody, Velocity};
 
 use crate::{
@@ -44,8 +44,8 @@ impl Plugin for Playerv2Plugin {
 
 const PLAYER_SIZE: f32 = 10.0;
 
-pub fn plaverv2_spawn(mut commands: &mut Commands, spawn_entity_event: &SpawnEntityEvent) {
-    let mut body = commands.spawn(SpriteBundle {
+pub fn plaverv2_spawn(mut body: &mut EntityCommands, spawn_entity_event: &SpawnEntityEvent) {
+    body.insert(SpriteBundle {
         sprite: Sprite {
             color: Color::rgb(0.0, 0.0, 1.0),
             custom_size: Some(Vec2::new(PLAYER_SIZE, PLAYER_SIZE)),
@@ -126,6 +126,7 @@ fn playerv2_shoot_system(
                 rotation: Some(transform.rotation),
                 projectile_type: ProjectileEntity::Bulletv1,
                 effect: Some(ProjectileEffect::Damage { amount: 10.0 }),
+
                 ..Default::default()
             });
         }

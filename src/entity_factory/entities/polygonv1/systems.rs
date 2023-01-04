@@ -1,7 +1,7 @@
 // To describe how the Polygonv1 component/entity should behave.
 // WILL: contain pure logic that interacts with the component
 
-use bevy::prelude::*;
+use bevy::{ecs::system::EntityCommands, prelude::*};
 use bevy_prototype_lyon::prelude::{DrawMode, FillMode, GeometryBuilder, PathBuilder, StrokeMode};
 use bevy_rapier2d::prelude::RigidBody;
 
@@ -21,7 +21,7 @@ impl Plugin for Polygonv1Plugin {
     fn build(&self, app: &mut App) {}
 }
 
-pub fn polygonv1_spawn(mut commands: &mut Commands, spawn_entity_event: &SpawnEntityEvent) {
+pub fn polygonv1_spawn(mut body: &mut EntityCommands, spawn_entity_event: &SpawnEntityEvent) {
     // let box_size = spawn_entity_event.size.unwrap_or_default();
     // let mut body = commands.spawn(SpriteBundle {
     //     sprite: Sprite {
@@ -55,7 +55,7 @@ pub fn polygonv1_spawn(mut commands: &mut Commands, spawn_entity_event: &SpawnEn
                 index += 1;
             }
 
-            let mut body = commands.spawn(GeometryBuilder::build_as(
+            body.insert(GeometryBuilder::build_as(
                 &line,
                 DrawMode::Outlined {
                     fill_mode: FillMode::color(Color::GREEN),

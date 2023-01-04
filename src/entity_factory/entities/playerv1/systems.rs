@@ -1,7 +1,7 @@
 // To describe how the Playerv1 component/entity should behave.
 // WILL: contain pure logic that interacts with the component
 
-use bevy::prelude::*;
+use bevy::{ecs::system::EntityCommands, prelude::*};
 
 use crate::{
     entity_factory::{
@@ -21,24 +21,23 @@ impl Plugin for Playerv1Plugin {
     }
 }
 
-pub fn plaverv1_spawn(mut commands: &mut Commands, spawn_entity_event: &SpawnEntityEvent) {
-    commands
-        .spawn(SpriteBundle {
-            sprite: Sprite {
-                color: Color::rgb(0.0, 0.0, 1.0),
-                custom_size: Some(Vec2::new(100.0, 100.0)),
-                ..Default::default()
-            },
-            transform: Transform {
-                translation: spawn_entity_event.position.unwrap_or_default(),
-                rotation: spawn_entity_event.rotation.unwrap_or_default(),
-                ..Default::default()
-            },
+pub fn plaverv1_spawn(mut body: &mut EntityCommands, spawn_entity_event: &SpawnEntityEvent) {
+    body.insert(SpriteBundle {
+        sprite: Sprite {
+            color: Color::rgb(0.0, 0.0, 1.0),
+            custom_size: Some(Vec2::new(100.0, 100.0)),
             ..Default::default()
-        })
-        .insert(Playerv1Entity)
-        .insert(InputBind { active: true })
-        .insert(MovableComponent::default());
+        },
+        transform: Transform {
+            translation: spawn_entity_event.position.unwrap_or_default(),
+            rotation: spawn_entity_event.rotation.unwrap_or_default(),
+            ..Default::default()
+        },
+        ..Default::default()
+    })
+    .insert(Playerv1Entity)
+    .insert(InputBind { active: true })
+    .insert(MovableComponent::default());
 }
 
 fn playerv1_control_system(

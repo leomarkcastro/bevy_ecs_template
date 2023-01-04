@@ -1,4 +1,5 @@
 use bevy::prelude::Vec2;
+use knn::PointCloud;
 use serde::{Deserialize, Serialize};
 
 // Map Related Structs
@@ -61,6 +62,8 @@ pub struct RoomFeatureData {
     pub crates: Vec<RoomFeatureDescriptionData>,
     pub pickups: Vec<RoomFeatureDescriptionData>,
     pub enemies: Vec<RoomFeatureDescriptionData>,
+    pub center: Vec2,
+    pub size: Vec2,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -81,4 +84,10 @@ pub struct RoomData {
     pub clinic: Vec<RoomFeatureData>,
     pub mechanic: Vec<RoomFeatureData>,
     pub gunshop: Vec<RoomFeatureData>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct PathData {
+    pub points: Vec<Vec2>,
+    pub vertices: Vec<Vec<u32>>,
 }
