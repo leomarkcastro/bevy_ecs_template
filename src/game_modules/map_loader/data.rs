@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 pub struct PointData {
     pub point_type: String,
     pub center: Vec2,
+    pub id: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

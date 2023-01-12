@@ -62,7 +62,7 @@ fn scene01_clickspawning_system(
 fn scene01_timerspawning_system(
     time: Res<Time>,
     mut one_sec_timer: ResMut<OneSecondTimer>,
-    mut camera_query: Query<&mut Transform, With<Camera>>,
+    mut camera_query: Query<&mut Transform, With<Camera2d>>,
     mut spawn_entity_events: EventWriter<SpawnEntityEvent>,
 ) {
     if one_sec_timer.event_timer.tick(time.delta()).finished() {
@@ -75,7 +75,9 @@ fn scene01_timerspawning_system(
             0.0,
         );
         spawn_entity_events.send(SpawnEntityEvent {
+            entity: GameEntity::Blockv1,
             position: Some(position),
+            size: Some(Vec2::new(50.0, 50.0)),
             ..Default::default()
         });
     }
@@ -85,7 +87,7 @@ fn scene01_timerspawning_system(
 
 const CAMERA_SPEED: f32 = 1.0;
 
-fn scene01_camera_system(time: Res<Time>, mut camera_query: Query<&mut Transform, With<Camera>>) {
+fn scene01_camera_system(time: Res<Time>, mut camera_query: Query<&mut Transform, With<Camera2d>>) {
     let mut camera_transform = camera_query.single_mut();
     camera_transform.translation.x += CAMERA_SPEED;
     // camera_transform.scale = Vec3::new(0.5, 0.5, 0.5);

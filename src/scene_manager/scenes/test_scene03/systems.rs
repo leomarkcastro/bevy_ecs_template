@@ -21,8 +21,12 @@ use bevy_rapier2d::{
 use crate::{
     entity_factory::{
         entities::{
-            global::proximity::components::ProximityDataComponent,
-            pickupablev1::entities::Pickupablev1Entity, playerv2::entities::Playerv2Entity,
+            global::{
+                despawn::components::DespawnComponent,
+                proximity::components::ProximityDataComponent,
+            },
+            pickupablev1::entities::Pickupablev1Entity,
+            playerv2::entities::Playerv2Entity,
         },
         factory::data::{GameEntity, GameEntityData, SpawnEntityEvent, SpawnUIEvent},
     },
@@ -30,9 +34,14 @@ use crate::{
         camera::components::{CameraFollowable, CameraMode, CameraResource},
         controllable::components::ControllableResource,
         global_event::systems::GlobalEvent,
-        map_loader::{boracay::BoracayMapPlugin, data::RoomType, systems::MapDataResource},
+        map_loader::{
+            boracay::{embed_boracy_map, BoracayMapPlugin},
+            data::RoomType,
+            systems::MapDataResource,
+        },
         save_load::{data::GlobalSaveData, systems::TriggerSaveLoadEvevnt},
         shaders::simple_point_light::components::{CoolMaterial, CoolMaterialUniformInput},
+        time_system::systems::CurrentWorldTimeGlobal,
         timers::components::OneSecondTimer,
     },
     scene_manager::manager::{
@@ -61,32 +70,40 @@ pub struct Scene03Plugin;
 
 impl Plugin for Scene03Plugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(Scene03Globals::default())
-            .add_plugin(BoracayMapPlugin)
-            .add_system_set(
-                SystemSet::on_enter(GameScene::Scene03).with_system(scene03_init_system),
-            )
-            .add_system_set(
-                SystemSet::on_update(GameScene::Scene03).with_system(scene03_run_system),
-            )
-            .add_system_set(
-                SystemSet::on_update(GameScene::Scene03).with_system(scene03_progression_system),
-            )
-            // .add_system_set(
-            //     SystemSet::on_update(GameScene::Scene03).with_system(scene03_timerspawning_system),
-            // )
-            .add_system_set(
-                SystemSet::on_update(GameScene::Scene03)
-                    .with_system(scene03_follow_first_player_system),
-            )
-            .add_system_set(
-                SystemSet::on_exit(GameScene::Scene03).with_system(despawn_screen::<World01>),
-            );
+        app.insert_resource(Scene03Globals::default());
+
+        embed_boracy_map(
+            app,
+            Some((
+                SystemSet::on_enter(GameScene::Scene03),
+                SystemSet::on_update(GameScene::Scene03),
+                SystemSet::on_exit(GameScene::Scene03),
+            )),
+        );
+
+        app.add_system_set(
+            SystemSet::on_enter(GameScene::Scene03).with_system(scene03_init_system),
+        )
+        .add_system_set(SystemSet::on_update(GameScene::Scene03).with_system(scene03_run_system))
+        .add_system_set(
+            SystemSet::on_update(GameScene::Scene03).with_system(scene03_progression_system),
+        )
+        // .add_system_set(
+        //     SystemSet::on_update(GameScene::Scene03).with_system(scene03_timerspawning_system),
+        // )
+        .add_system_set(
+            SystemSet::on_update(GameScene::Scene03)
+                .with_system(scene03_follow_first_player_system),
+        )
+        .add_system_set(
+            SystemSet::on_exit(GameScene::Scene03).with_system(despawn_screen::<World01>),
+        );
     }
 }
 
 fn scene03_init_system(
     mut commands: Commands,
+    mut time_tick: ResMut<CurrentWorldTimeGlobal>,
     // mut spawn_entity_events: EventWriter<SpawnEntityEvent>,
     // mut mesh_assets: ResMut<Assets<Mesh>>,
     // mut my_material_assets: ResMut<Assets<CoolMaterial>>,
@@ -97,6 +114,8 @@ fn scene03_init_system(
     //     target_point: Vec3::new(60.0, 0.0, 0.0),
     // };
     println!("Scene03 init");
+
+    time_tick.active = true;
 
     // let map_data = map_data.map_data.as_ref().unwrap();
 
@@ -228,6 +247,20 @@ fn scene03_run_system(
     //     });
     // }
 
+    // if (controllable_component.btn_b.pressed) {
+    //     spawn_entity_events.send(SpawnEntityEvent {
+    //         entity: GameEntity::Treev1,
+    //         entity_data: Some(GameEntityData::Treev1 {
+    //             despawn_data: DespawnComponent {
+    //                 ..Default::default()
+    //             },
+    //         }),
+    //         position: Some(Vec3::from([0.0, 0.0, 200.0])),
+    //         size: Some(Vec2::from([50.0, 50.0])),
+    //         ..Default::default()
+    //     });
+    // }
+
     if (controllable_component.btn_c.pressed) {
         spawn_entity_events.send(SpawnEntityEvent {
             entity: GameEntity::PlayerV2,
@@ -247,7 +280,6 @@ fn scene03_run_system(
 fn scene03_timerspawning_system(
     time: Res<Time>,
     mut one_sec_timer: ResMut<OneSecondTimer>,
-    mut camera_query: Query<&mut Transform, With<Camera>>,
     mut spawn_entity_events: EventWriter<SpawnEntityEvent>,
     mut scene_global: ResMut<Scene03Globals>,
 ) {
@@ -305,9 +337,18 @@ fn scene03_progression_system(
 
 fn scene03_follow_first_player_system(
     mut camera_resource: ResMut<CameraResource>,
-    player_query: Query<(&CameraFollowable), With<Playerv2Entity>>,
+    mut colordata_query: Query<
+        (&mut CoolMaterialUniformInput, &Transform),
+        Without<Playerv2Entity>,
+    >,
+    player_query: Query<(&CameraFollowable, &mut Transform), With<Playerv2Entity>>,
 ) {
-    if let Ok((&followable)) = player_query.get_single() {
+    if let Ok((&pl_followable, mut pl_transform)) = player_query.get_single() {
+        if let (Ok((mut cd_colordata, cd_transform))) = colordata_query.get_single_mut() {
+            cd_colordata.position[0].x = pl_transform.translation.x;
+            cd_colordata.position[0].y = pl_transform.translation.y;
+            cd_colordata.position[0].z = 1000.0;
+        }
         if let CameraMode::AtAssetFace {
             target_asset_id,
             distance,
@@ -316,7 +357,7 @@ fn scene03_follow_first_player_system(
             return;
         }
         // println!("CameraMode::AtAsset");
-        let followable_id = followable.id;
+        let followable_id = pl_followable.id;
         camera_resource.mode = CameraMode::AtAssetFace {
             target_asset_id: followable_id,
             distance: 30.0,

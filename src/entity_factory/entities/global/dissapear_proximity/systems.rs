@@ -3,47 +3,55 @@
 
 use bevy::prelude::*;
 
-use super::{DissapearProximityComponent, DissapearProximityEntity};
+use crate::{
+    entity_factory::entities::playerv2::entities::Playerv2Entity,
+    utils::check_collide::check_pointtorect_collide_rect,
+};
+
+use super::DissapearProximityComponent;
 
 pub struct DissapearProximityPlugin;
 
 impl Plugin for DissapearProximityPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(dissapear_proximity_init_system)
-            .add_system(dissapear_proximity_system);
+        app.add_system(dissapear_proximity_system);
     }
 }
 
-fn dissapear_proximity_init_system(mut commands: Commands) {
-    commands
-        .spawn(SpriteBundle {
-            ..Default::default()
-        })
-        .insert(DissapearProximityEntity)
-        .insert(DissapearProximityComponent {
-            data: "Hello, World!".to_string(),
-            printed: false,
-        });
-}
-
+// For now, it will only disappear when the player is within proximity
 fn dissapear_proximity_system(
-    mut query: Query<
-        &mut DissapearProximityComponent,
-        With<DissapearProximityEntity>,
+    mut q_roof: Query<(&mut Sprite, &GlobalTransform), With<DissapearProximityComponent>>,
+    q_player: Query<
+        (&Sprite, &GlobalTransform),
+        (With<Playerv2Entity>, Without<DissapearProximityComponent>),
     >,
 ) {
-    // Single Query
-    if let Ok(mut dissapear_proximity_component) = query.get_single_mut() {
-        dissapear_proximity_component.data = "Hello, World!".to_string();
-    }
+    for (a_sprite, a_gtransform) in q_player.iter() {
+        // check if any player is within detection range
+        for (mut b_sprite, b_gtransform) in q_roof.iter_mut() {
+            // get the vec3 of a and b from global transform
+            let a_gt = a_gtransform.to_scale_rotation_translation().2;
+            let b_gt = b_gtransform.to_scale_rotation_translation().2;
 
-    // Multiple Queries
-    for mut dissapear_proximity_component in query.iter_mut() {
-        if (dissapear_proximity_component.printed) {
-            continue;
+            let a_sprite_size = &a_sprite.custom_size.unwrap_or_default();
+            let b_sprite_size = &b_sprite.custom_size.unwrap_or_default();
+            let mut color = &mut b_sprite.color;
+
+            // let distance = b_gt.truncate().distance(a_gt.truncate());
+
+            // println!("{}", distance);
+            if check_pointtorect_collide_rect(
+                &a_gt.truncate(),
+                &a_sprite_size,
+                &b_gt.truncate(),
+                &b_sprite_size,
+            ) {
+                // reduce the opacity of the sprite
+                color.set_a(f32::max(color.a() - 0.01, 0.0));
+            } else {
+                // reset the opacity of the sprite
+                color.set_a(f32::min(color.a() + 0.05, 1.0));
+            }
         }
-
-        println!("{:?}", dissapear_proximity_component.data);
-        dissapear_proximity_component.printed = true;
     }
 }

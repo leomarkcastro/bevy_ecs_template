@@ -1,10 +1,13 @@
-pub mod pan_camera;
 pub mod camera;
 pub mod controllable;
 pub mod face_axis;
 pub mod global_event;
+pub mod kayak;
+pub mod load_assets;
 pub mod map_loader;
+pub mod pan_camera;
+pub mod path_finding;
 pub mod save_load;
 pub mod shaders;
+pub mod time_system;
 pub mod timers;
-pub mod path_finding;

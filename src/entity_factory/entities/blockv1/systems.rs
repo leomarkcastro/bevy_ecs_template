@@ -55,7 +55,7 @@ pub fn blockv1_spawn(mut body: &mut EntityCommands, spawn_entity_event: &SpawnEn
     let box_size = spawn_entity_event.size.unwrap_or_default();
     body.insert(SpriteBundle {
         sprite: Sprite {
-            color: Color::rgba(0.0, 1.0, 0.0, 0.3),
+            color: Color::rgb(0.0, 1.0, 0.0),
             custom_size: Some(box_size),
             ..Default::default()
         },

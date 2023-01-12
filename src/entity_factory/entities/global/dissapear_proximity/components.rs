@@ -4,7 +4,4 @@ use bevy::prelude::Component;
 // WILL: contain data describing the current status of its attached entity in its respective domain
 
 #[derive(Component)]
-pub struct DissapearProximityComponent {
-    pub data: String,
-    pub printed: bool,
-}
+pub struct DissapearProximityComponent;

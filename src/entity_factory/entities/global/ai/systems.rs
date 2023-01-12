@@ -220,7 +220,9 @@ fn ai_detection_system(
                     }
                     false
                 });
-                // return;
+
+                return; // HEY!! THIS IS A TEMPORARY RETURN STATEMENT
+
                 // check if any player is within detection range
                 for (identifier, detection, player_gtransform) in player_filter {
                     let player_location = player_gtransform

@@ -31,7 +31,7 @@ fn despawn_system(
     mut command: Commands,
     mut query: Query<(Entity, &DespawnComponent, &Transform)>,
     mut despawn_tracker: ResMut<DespawnTrackerGlobal>,
-    camera_query: Query<&Transform, With<Camera>>,
+    camera_query: Query<&Transform, With<Camera2d>>,
 ) {
     use bevy::math::Vec3Swizzles;
     // get camera xy

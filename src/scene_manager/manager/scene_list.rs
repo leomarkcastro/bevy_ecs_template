@@ -5,4 +5,6 @@ pub enum GameScene {
     Scene01,
     Scene02,
     Scene03,
+    Scene04,
+    Scene05,
 }

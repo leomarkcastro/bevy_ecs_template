@@ -10,14 +10,15 @@ use crate::{
             blockv1::systems::blockv1_spawn, blockv2::systems::blockv2_spawn,
             blockv3::systems::blockv3_spawn, inject_entities,
             pickupablev1::systems::pickupablev1_spawn, playerv1::systems::plaverv1_spawn,
-            playerv2::systems::plaverv2_spawn, polygonv1::systems::polygonv1_spawn,
-            polygonv2::systems::polygonv2_spawn, room::systems::roomv1_spawn,
-            ui::screen::simple_text::systems::simple_text_spawn,
+            playerv2::systems::plaverv2_spawn, playerv3::systems::plaverv3_spawn,
+            polygonv1::systems::polygonv1_spawn, polygonv2::systems::polygonv2_spawn,
+            roofv1::systems::roofv1_spawn, roomv1::systems::roomv1_spawn,
+            treev1::systems::treev1_spawn, ui::screen::simple_text::systems::simple_text_spawn,
             zombiesv1::systems::zombiesv1_spawn,
         },
         factory::data::{GameEntity, UIEntity},
     },
-    game_modules::map_loader::systems::RoomDataResource,
+    game_modules::{load_assets::systems::GameTextures, map_loader::systems::RoomDataResource},
 };
 
 use super::data::{SpawnEntityEvent, SpawnUIEvent};
@@ -43,6 +44,8 @@ fn factory_system(
     mut commands: Commands,
     mut spawn_entity_events: EventReader<SpawnEntityEvent>,
     room_data: Res<RoomDataResource>,
+    asset_server: Res<AssetServer>,
+    game_textures: Res<GameTextures>,
 ) {
     use GameEntity::*;
 
@@ -51,6 +54,7 @@ fn factory_system(
         match event.entity {
             PlayerV1 => plaverv1_spawn(&mut basebody, event),
             PlayerV2 => plaverv2_spawn(&mut basebody, event),
+            PlayerV3 => plaverv3_spawn(&mut basebody, event, &game_textures),
             Zombiesv1 => zombiesv1_spawn(&mut basebody, event),
             Pickupablev1 => pickupablev1_spawn(&mut basebody, event),
             Blockv1 => blockv1_spawn(&mut basebody, event),
@@ -59,6 +63,8 @@ fn factory_system(
             Polygonv1 => polygonv1_spawn(&mut basebody, event),
             Polygonv2 => polygonv2_spawn(&mut basebody, event),
             Roomv1 => roomv1_spawn(&mut basebody, event, &room_data),
+            Roofv1 => roofv1_spawn(&mut basebody, event),
+            Treev1 => treev1_spawn(&mut basebody, event),
             _ => {}
         }
     }

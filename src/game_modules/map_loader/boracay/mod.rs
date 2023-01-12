@@ -46,6 +46,7 @@ struct BoracayMapGlobals {
     bldg_cam_pos: Option<Vec2>,
     mntn_cam_pos: Option<Vec2>,
     frst_cam_pos: Option<Vec2>,
+    gsfl_cam_pos: Option<Vec2>,
     road_cam_pos: Option<Vec2>,
 }
 
@@ -63,6 +64,7 @@ impl Default for BoracayMapGlobals {
             mntn_cam_pos: None,
             frst_cam_pos: None,
             road_cam_pos: None,
+            gsfl_cam_pos: None,
         }
     }
 }
@@ -74,26 +76,49 @@ pub struct BoracayMapPlugin;
 
 impl Plugin for BoracayMapPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(BoracayMapGlobals::default())
-            .insert_resource(TestTargetIndex {
-                start: 0,
-                end: 10,
-                query_id: "".to_string(),
-            })
-            .add_startup_system(boracay_island_spawn_system.after(map_loader_system))
+        embed_boracy_map(app, None);
+    }
+}
+
+pub fn embed_boracy_map(app: &mut App, system_set: Option<(SystemSet, SystemSet, SystemSet)>) {
+    app.insert_resource(BoracayMapGlobals::default())
+        .insert_resource(TestTargetIndex {
+            start: 0,
+            end: 10,
+            query_id: "".to_string(),
+        });
+
+    // if system set is provided, add systems to the system set, else add to app
+    if system_set.is_some() {
+        let (on_enter, on_update, on_end) = system_set.unwrap();
+        app.add_system_set(
+            on_enter.with_system(boracay_island_spawn_system.after(map_loader_system)),
+        )
+        .add_system_set(
+            on_update
+                .with_system(boracay_bldg_stream_system)
+                .with_system(boracay_mountain_stream_system)
+                .with_system(boracay_grassfield_stream_system)
+                .with_system(boracay_forest_stream_system)
+                .with_system(boracay_road_stream_system),
+        )
+        .add_system_set(on_end);
+    } else {
+        app.add_startup_system(boracay_island_spawn_system.after(map_loader_system))
             // .add_startup_system(boracay_building_spawn_system.after(boracay_island_spawn_system))
             // .add_startup_system(boracay_mountain_spawn_system.after(boracay_island_spawn_system))
             // .add_startup_system(boracay_forest_spawn_system.after(boracay_island_spawn_system))
             // .add_startup_system(boracay_road_spawn_system.after(boracay_island_spawn_system))
             .add_system(boracay_bldg_stream_system)
             .add_system(boracay_mountain_stream_system)
+            .add_system(boracay_grassfield_stream_system)
             .add_system(boracay_forest_stream_system)
             .add_system(boracay_road_stream_system);
     }
 }
 
 fn boracay_bldg_stream_system(
-    camera_query: Query<&Transform, With<Camera>>,
+    camera_query: Query<&Transform, With<Camera2d>>,
     mut scene_global: ResMut<BoracayMapGlobals>,
     mut despawn_tracker: ResMut<DespawnTrackerGlobal>,
     mut spawn_entity_events: EventWriter<SpawnEntityEvent>,
@@ -135,6 +160,10 @@ fn boracay_bldg_stream_system(
         //     (camera_xy - building.center * Vec2 { x: 1.0, y: -1.0 } * MAP_SCALE).length();
         // println!("Distance: {} || SR: {}", distance, SPAWN_RADIUS);
         // (distance <= SPAWN_RADIUS)
+
+        // Essentially, this will check if the building is within the spawn radius of the camera
+        // And it is not in the skip list
+        // And it has not been spawned yet
         (check_2circle_collide(
             CircleCollideData {
                 center: camera_xy,
@@ -203,7 +232,7 @@ fn boracay_bldg_stream_system(
 }
 
 fn boracay_mountain_stream_system(
-    camera_query: Query<&Transform, With<Camera>>,
+    camera_query: Query<&Transform, With<Camera2d>>,
     mut scene_global: ResMut<BoracayMapGlobals>,
     mut despawn_tracker: ResMut<DespawnTrackerGlobal>,
     mut spawn_entity_events: EventWriter<SpawnEntityEvent>,
@@ -304,7 +333,7 @@ fn boracay_mountain_stream_system(
 }
 
 fn boracay_forest_stream_system(
-    camera_query: Query<&Transform, With<Camera>>,
+    camera_query: Query<&Transform, With<Camera2d>>,
     mut scene_global: ResMut<BoracayMapGlobals>,
     mut despawn_tracker: ResMut<DespawnTrackerGlobal>,
     mut spawn_entity_events: EventWriter<SpawnEntityEvent>,
@@ -338,6 +367,7 @@ fn boracay_forest_stream_system(
 
     let map_data = map_data_res.map_data.as_ref().unwrap();
 
+    // Get all the forest within the spawn radius
     let to_spawn = map_data
         .forest_list_vectorpoints
         .par_iter()
@@ -356,16 +386,125 @@ fn boracay_forest_stream_system(
                     center: bldg_center,
                     radius: building.radius * MAP_SCALE,
                 },
-            )) && (!despawn_tracker.spawned_id.contains(&building.id))
+            ))
         });
 
-    let to_loop = to_spawn.collect::<Vec<_>>();
+    let to_spawn_forest = to_spawn
+        .clone()
+        .filter(|building| (!despawn_tracker.spawned_id.contains(&building.id)));
 
-    if to_loop.len() == 0 {
-        return;
+    let to_loop_elements = to_spawn.collect::<Vec<_>>();
+    let to_loop_outlines = to_spawn_forest.collect::<Vec<_>>();
+
+    // if to_loop_outlines.len() == 0 && to_loop_elements.len() == 0 {
+    //     return;
+    // }
+
+    // Spin trees
+    for forest in &to_loop_elements {
+        let forest_start = forest.start.extend(1.0)
+            * Vec3 {
+                x: 1.0,
+                y: -1.0,
+                z: 3.0,
+            }
+            * MAP_SCALE;
+
+        let par_to_spawn_tree =
+            forest
+                .points_data
+                .as_ref()
+                .unwrap()
+                .par_iter()
+                .filter(|point_data| {
+                    let bldg_center = point_data.center * Vec2 { x: 1.0, y: -1.0 } * MAP_SCALE
+                        + forest_start.truncate();
+                    // let distance =
+                    //     (camera_xy - building.center * Vec2 { x: 1.0, y: -1.0 } * MAP_SCALE).length();
+                    // println!("Distance: {} || SR: {}", distance, SPAWN_RADIUS);
+                    // (distance <= SPAWN_RADIUS)
+                    (check_2circle_collide(
+                        CircleCollideData {
+                            center: camera_xy,
+                            radius: SPAWN_RADIUS,
+                        },
+                        CircleCollideData {
+                            center: bldg_center,
+                            radius: 15.0,
+                        },
+                    )) && (!despawn_tracker.spawned_id.contains(&point_data.id))
+                });
+        let to_spawn_tree = par_to_spawn_tree.collect::<Vec<_>>();
+        if to_spawn_tree.len() == 0 {
+            continue;
+        }
+        for tree in &to_spawn_tree {
+            match tree.point_type.as_str() {
+                "tree" => {
+                    despawn_tracker.spawned_id.push(tree.id.clone());
+                    // Spawn the forest outline
+                    spawn_entity_events.send(SpawnEntityEvent {
+                        entity: GameEntity::Treev1,
+                        entity_data: Some(GameEntityData::Treev1 {
+                            despawn_data: DespawnComponent {
+                                id: tree.id.clone(),
+                                bldg_circle: 43.0,
+                                camera_circle: SPAWN_RADIUS,
+                                ..Default::default()
+                            },
+                            internal_radius_percentage: 0.25,
+                        }),
+                        position: Some(
+                            tree.center.extend(200.)
+                                * Vec3 {
+                                    x: 1.0,
+                                    y: -1.0,
+                                    z: 1.0,
+                                }
+                                * MAP_SCALE
+                                + forest_start,
+                        ),
+                        size: Some(Vec2::from([30.0, 30.0])),
+                        ..Default::default()
+                    })
+                }
+                "spawn" => {
+                    despawn_tracker.spawned_id.push(tree.id.clone());
+                    let mut rng = rand::thread_rng();
+                    let random_number: f32 = rng.gen();
+                    if random_number > 0.5 {
+                        continue;
+                    }
+                    spawn_entity_events.send(SpawnEntityEvent {
+                        entity: GameEntity::Zombiesv1,
+                        entity_data: Some(GameEntityData::Zombiesv1 {
+                            despawn_data: DespawnComponent {
+                                id: tree.id.clone(),
+                                bldg_circle: 15.0,
+                                camera_circle: SPAWN_RADIUS,
+                            },
+                        }),
+                        position: Some(
+                            tree.center.extend(10.)
+                                * Vec3 {
+                                    x: 1.0,
+                                    y: -1.0,
+                                    z: 1.0,
+                                }
+                                * MAP_SCALE
+                                + forest_start,
+                        ),
+                        size: Some(Vec2::from([10.0, 10.0])),
+                        ..Default::default()
+                    })
+                }
+                _ => {}
+            }
+        }
     }
 
-    for forest in &to_loop {
+    // Spin forest outline
+    for forest in &to_loop_outlines {
         despawn_tracker.spawned_id.push(forest.id.clone());
         let mountain_1_points = forest
             .points_less
@@ -374,6 +513,7 @@ fn boracay_forest_stream_system(
             .map(|p| Vec2::new(p.x, -p.y) * MAP_SCALE)
             .collect::<Vec<Vec2>>();
 
+        // Spawn the forest outline
         spawn_entity_events.send(SpawnEntityEvent {
             entity: GameEntity::Polygonv2,
             entity_data: Some(GameEntityData::Polygonv2 {
@@ -401,11 +541,221 @@ fn boracay_forest_stream_system(
             ..Default::default()
         })
     }
-    // println!("---------------- Spawned: {}", to_loop.len());
+}
+
+fn boracay_grassfield_stream_system(
+    camera_query: Query<&Transform, With<Camera2d>>,
+    mut scene_global: ResMut<BoracayMapGlobals>,
+    mut despawn_tracker: ResMut<DespawnTrackerGlobal>,
+    mut spawn_entity_events: EventWriter<SpawnEntityEvent>,
+    map_data_res: Res<MapDataResource>,
+) {
+    if camera_query.iter().len() == 0 {
+        return;
+    }
+
+    let camera_xy = camera_query.single().translation.xyy().xy();
+
+    // get if camera moved
+    if let Some(cam_pos) = scene_global.gsfl_cam_pos {
+        let distance = (cam_pos - camera_xy).length();
+        // println!(
+        //     "Distance: {} || SR: {} || check",
+        //     distance,
+        //     SPAWN_RADIUS / 2.0
+        // );
+        if distance < TRIGGER_SPAWN_RADIUS / 2.0 {
+            return;
+        }
+    }
+
+    // println!(
+    //     "Boracay stream system {} -----------------------",
+    //     camera_xy
+    // );
+
+    scene_global.gsfl_cam_pos = Some(camera_xy);
+
+    let map_data = map_data_res.map_data.as_ref().unwrap();
+
+    // Get all the forest within the spawn radius
+    let to_spawn = map_data
+        .grassfield_list_vectorpoints
+        .par_iter()
+        .filter(|building| {
+            let bldg_center = building.center * Vec2 { x: 1.0, y: -1.0 } * MAP_SCALE;
+            // let distance =
+            //     (camera_xy - building.center * Vec2 { x: 1.0, y: -1.0 } * MAP_SCALE).length();
+            // println!("Distance: {} || SR: {}", distance, SPAWN_RADIUS);
+            // (distance <= SPAWN_RADIUS)
+            (check_2circle_collide(
+                CircleCollideData {
+                    center: camera_xy,
+                    radius: SPAWN_RADIUS,
+                },
+                CircleCollideData {
+                    center: bldg_center,
+                    radius: building.radius * MAP_SCALE,
+                },
+            ))
+        });
+
+    let to_spawn_forest = to_spawn
+        .clone()
+        .filter(|building| (!despawn_tracker.spawned_id.contains(&building.id)));
+
+    let to_loop_elements = to_spawn.collect::<Vec<_>>();
+    let to_loop_outlines = to_spawn_forest.collect::<Vec<_>>();
+
+    // if to_loop_outlines.len() == 0 && to_loop_elements.len() == 0 {
+    //     return;
+    // }
+
+    // Spin trees
+    for forest in &to_loop_elements {
+        let forest_start = forest.start.extend(1.0)
+            * Vec3 {
+                x: 1.0,
+                y: -1.0,
+                z: 3.0,
+            }
+            * MAP_SCALE;
+
+        let par_to_spawn_tree =
+            forest
+                .points_data
+                .as_ref()
+                .unwrap()
+                .par_iter()
+                .filter(|point_data| {
+                    let bldg_center = point_data.center * Vec2 { x: 1.0, y: -1.0 } * MAP_SCALE
+                        + forest_start.truncate();
+                    // let distance =
+                    //     (camera_xy - building.center * Vec2 { x: 1.0, y: -1.0 } * MAP_SCALE).length();
+                    // println!("Distance: {} || SR: {}", distance, SPAWN_RADIUS);
+                    // (distance <= SPAWN_RADIUS)
+                    (check_2circle_collide(
+                        CircleCollideData {
+                            center: camera_xy,
+                            radius: SPAWN_RADIUS,
+                        },
+                        CircleCollideData {
+                            center: bldg_center,
+                            radius: 15.0,
+                        },
+                    )) && (!despawn_tracker.spawned_id.contains(&point_data.id))
+                });
+        let to_spawn_tree = par_to_spawn_tree.collect::<Vec<_>>();
+        if to_spawn_tree.len() == 0 {
+            continue;
+        }
+        for tree in &to_spawn_tree {
+            match tree.point_type.as_str() {
+                "tree" => {
+                    despawn_tracker.spawned_id.push(tree.id.clone());
+                    // Spawn the forest outline
+                    spawn_entity_events.send(SpawnEntityEvent {
+                        entity: GameEntity::Treev1,
+                        entity_data: Some(GameEntityData::Treev1 {
+                            despawn_data: DespawnComponent {
+                                id: tree.id.clone(),
+                                bldg_circle: 43.0,
+                                camera_circle: SPAWN_RADIUS,
+                                ..Default::default()
+                            },
+                            internal_radius_percentage: 0.25,
+                        }),
+                        position: Some(
+                            tree.center.extend(200.)
+                                * Vec3 {
+                                    x: 1.0,
+                                    y: -1.0,
+                                    z: 1.0,
+                                }
+                                * MAP_SCALE
+                                + forest_start,
+                        ),
+                        size: Some(Vec2::from([30.0, 30.0])),
+                        ..Default::default()
+                    })
+                }
+                "spawn" => {
+                    despawn_tracker.spawned_id.push(tree.id.clone());
+                    let mut rng = rand::thread_rng();
+                    let random_number: f32 = rng.gen();
+                    if random_number > 0.5 {
+                        continue;
+                    }
+                    spawn_entity_events.send(SpawnEntityEvent {
+                        entity: GameEntity::Zombiesv1,
+                        entity_data: Some(GameEntityData::Zombiesv1 {
+                            despawn_data: DespawnComponent {
+                                id: tree.id.clone(),
+                                bldg_circle: 15.0,
+                                camera_circle: SPAWN_RADIUS,
+                            },
+                        }),
+                        position: Some(
+                            tree.center.extend(10.)
+                                * Vec3 {
+                                    x: 1.0,
+                                    y: -1.0,
+                                    z: 1.0,
+                                }
+                                * MAP_SCALE
+                                + forest_start,
+                        ),
+                        size: Some(Vec2::from([10.0, 10.0])),
+                        ..Default::default()
+                    })
+                }
+                _ => {}
+            }
+        }
+    }
+
+    // Spin forest outline
+    for forest in &to_loop_outlines {
+        despawn_tracker.spawned_id.push(forest.id.clone());
+        let mountain_1_points = forest
+            .points_less
+            .clone()
+            .into_iter()
+            .map(|p| Vec2::new(p.x, -p.y) * MAP_SCALE)
+            .collect::<Vec<Vec2>>();
+
+        // Spawn the forest outline
+        spawn_entity_events.send(SpawnEntityEvent {
+            entity: GameEntity::Polygonv2,
+            entity_data: Some(GameEntityData::Polygonv2 {
+                path: mountain_1_points,
+                style: DrawMode::Outlined {
+                    fill_mode: FillMode::color(Color::rgba(0., 1.0, 0., 0.05)),
+                    outline_mode: StrokeMode::new(Color::rgba(0., 0.5, 0., 0.025), MAP_SCALE),
+                },
+                despawn: DespawnComponent {
+                    camera_circle: SPAWN_RADIUS * 1.5,
+                    bldg_circle: forest.radius * MAP_SCALE * 1.5,
+                    id: forest.id.clone(),
+                },
+                is_collidable: false,
+            }),
+            position: Some(
+                forest.start.extend(1.0)
+                    * Vec3 {
+                        x: 1.0,
+                        y: -1.0,
+                        z: 3.0,
+                    }
+                    * MAP_SCALE,
+            ),
+            ..Default::default()
+        })
+    }
 }
 
 fn boracay_road_stream_system(
-    camera_query: Query<&Transform, With<Camera>>,
+    camera_query: Query<&Transform, With<Camera2d>>,
     mut scene_global: ResMut<BoracayMapGlobals>,
     mut despawn_tracker: ResMut<DespawnTrackerGlobal>,
     mut spawn_entity_events: EventWriter<SpawnEntityEvent>,
@@ -569,24 +919,26 @@ fn boracay_island_spawn_system(
         index += 1;
     }
 
+    let island_shape = GeometryBuilder::build_as(
+        &line,
+        DrawMode::Outlined {
+            fill_mode: FillMode::color(Color::hex("567D46").unwrap()),
+            outline_mode: StrokeMode::new(Color::hex("7EC850").unwrap(), MAP_SCALE),
+        },
+        Transform {
+            translation: island.start.extend(0.0)
+                * Vec3 {
+                    x: 1.0,
+                    y: -1.0,
+                    z: 1.0,
+                }
+                * MAP_SCALE,
+            ..Default::default()
+        },
+    );
+
     commands
-        .spawn(GeometryBuilder::build_as(
-            &line,
-            DrawMode::Outlined {
-                fill_mode: FillMode::color(Color::hex("567D46").unwrap()),
-                outline_mode: StrokeMode::new(Color::hex("7EC850").unwrap(), MAP_SCALE),
-            },
-            Transform {
-                translation: island.start.extend(0.0)
-                    * Vec3 {
-                        x: 1.0,
-                        y: -1.0,
-                        z: 1.0,
-                    }
-                    * MAP_SCALE,
-                ..Default::default()
-            },
-        ))
+        .spawn(island_shape)
         .insert(ActiveEvents::COLLISION_EVENTS)
         .insert(RigidBody::Fixed)
         .insert(Velocity::zero())

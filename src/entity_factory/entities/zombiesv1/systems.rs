@@ -10,10 +10,11 @@ use crate::entity_factory::{
             entities::AIEntity,
         },
         collidable::components::CollidableBody,
+        despawn::components::DespawnComponent,
         health::components::HealthComponent,
         physics_movable::systems::{insert_physics_components, PhysicsFeature},
     },
-    factory::data::SpawnEntityEvent,
+    factory::data::{GameEntityData, SpawnEntityEvent},
 };
 
 use super::{Zombiesv1Component, Zombiesv1Entity};
@@ -27,6 +28,12 @@ impl Plugin for Zombiesv1Plugin {
 }
 
 pub fn zombiesv1_spawn(mut body: &mut EntityCommands, spawn_entity_event: &SpawnEntityEvent) {
+    let data = spawn_entity_event.entity_data.as_ref();
+    let mut _despawn_data = None;
+    if let Some(GameEntityData::Zombiesv1 { despawn_data }) = data {
+        _despawn_data = Some(despawn_data.clone());
+    }
+
     body.insert(SpriteBundle {
         sprite: Sprite {
             color: Color::rgb(0.0, 1.0, 0.0),
@@ -65,4 +72,14 @@ pub fn zombiesv1_spawn(mut body: &mut EntityCommands, spawn_entity_event: &Spawn
             team: AITeam::Zombies,
             ..Default::default()
         });
+
+    if _despawn_data.is_some() {
+        let dd = _despawn_data.unwrap();
+        // Dissapear after sitance
+        body.insert(DespawnComponent {
+            bldg_circle: dd.bldg_circle,
+            camera_circle: dd.camera_circle,
+            id: dd.id.clone(),
+        });
+    }
 }

@@ -87,6 +87,7 @@ pub enum GameEntity {
     TestBox,
     PlayerV1,
     PlayerV2,
+    PlayerV3,
     Bulletv1,
     Zombiesv1,
     Pickupablev1,
@@ -96,6 +97,8 @@ pub enum GameEntity {
     Polygonv1,
     Polygonv2,
     Roomv1,
+    Roofv1,
+    Treev1,
 }
 
 #[derive(Debug)]
@@ -120,9 +123,16 @@ pub enum GameEntityData {
         room_type: RoomType,
         despawn_data: DespawnComponent,
     },
+    Treev1 {
+        despawn_data: DespawnComponent,
+        internal_radius_percentage: f32,
+    },
     Block {
         no_physic: bool,
         despawn_timer_data: DespawnWithTimerComponent,
+    },
+    Zombiesv1 {
+        despawn_data: DespawnComponent,
     },
 }
 

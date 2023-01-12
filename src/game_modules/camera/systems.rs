@@ -16,8 +16,9 @@ use super::components::{CameraFollowable, CameraMode, CameraResource};
 pub const CLEAR: Color = Color::rgb(1.0, 1.0, 1.0);
 pub const HEIGHT: f32 = 600.0;
 pub const RESOLUTION: f32 = 4.0 / 3.0;
-pub const PROJECTION_SIZE: f32 = 50.0 * 1.0;
-pub const SCALE_MODE: ScalingMode = ScalingMode::FixedVertical(PROJECTION_SIZE * 2.0);
+pub const PROJECTION_SIZE: f32 = 50.0 * 1.25;
+// pub const SCALE_MODE: ScalingMode = ScalingMode::None;
+pub const SCALE_MODE: ScalingMode = ScalingMode::FixedVertical(PROJECTION_SIZE * RESOLUTION);
 
 pub struct CameraSetupPlugin;
 
@@ -47,8 +48,8 @@ pub fn camera_init_system(mut commands: Commands) {
 }
 
 fn camera_follow_system(
-    mut camera_query: Query<&mut Transform, With<Camera>>,
-    asset_query: Query<(&Transform, &CameraFollowable), Without<Camera>>,
+    mut camera_query: Query<&mut Transform, With<Camera2d>>,
+    asset_query: Query<(&Transform, &CameraFollowable), Without<Camera2d>>,
     camera_resource: Res<CameraResource>,
 ) {
     let camera_xy = camera_query.single().translation.xy();

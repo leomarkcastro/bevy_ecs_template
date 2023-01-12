@@ -1,0 +1,102 @@
+use bevy::prelude::*;
+use kayak_ui::prelude::{widgets::*, *};
+
+// =========================== INTERNALLY ABSTRACTED DEFINITIONS
+
+#[derive(Component, Default, PartialEq, Clone)]
+pub struct __templateNameToPascalCase__;
+
+impl Widget for __templateNameToPascalCase__ {}
+
+#[derive(Component, Default, PartialEq, Clone)]
+pub struct __templateNameToPascalCase__State {
+    foo: u32,
+}
+
+fn __templateNameToLowerCase___renderer(
+    In((widget_context, entity)): In<(KayakWidgetContext, Entity)>,
+    mut commands: Commands,
+    query: Query<&__templateNameToPascalCase__State>,
+) -> bool {
+    let state_entity = widget_context.use_state(
+        &mut commands,
+        entity,
+        __templateNameToPascalCase__State::default(),
+    );
+
+    if let Ok(current_count) = query.get(state_entity) {
+        let parent_id = Some(entity);
+        rsx! {
+            <ElementBundle>
+                <TextWidgetBundle
+                    text={
+                        TextProps {
+                            content: format!("Current Count: {}", current_count.foo),
+                            size: 16.0,
+                            line_height: Some(40.0),
+                            ..Default::default()
+                        }
+                    }
+                />
+                <KButtonBundle
+                    button={KButton {
+                        text: "Click me!".into(),
+                        ..Default::default()
+                    }}
+                    on_event={OnEvent::new(
+                        move |
+                          In((event_dispatcher_context, _, mut event, _entity)): In<(EventDispatcherContext, WidgetState, Event, Entity)>,
+                          mut query: Query<&mut __templateNameToPascalCase__State>
+                        |
+                        {
+                            match event.event_type {
+                                EventType::Click(..) => {
+                                    event.prevent_default();
+                                    event.stop_propagation();
+                                    if let Ok(mut current_count) = query.get_mut(state_entity) {
+                                        current_count.foo += 1;
+                                    }
+                                }
+                                _ => {}
+                            }
+                            (event_dispatcher_context, event)
+                        },
+                    )}
+                />
+            </ElementBundle>
+        };
+    }
+
+    true
+}
+
+// =========================== EXTERNALLY USED DEFINITIONS
+
+pub fn gui_plug___templateNameToLowerCase__(widget_context: &mut KayakRootContext) {
+    widget_context
+        .add_widget_data::<__templateNameToPascalCase__, __templateNameToPascalCase__State>();
+    widget_context.add_widget_system(
+        __templateNameToPascalCase__::default().get_name(),
+        widget_update::<__templateNameToPascalCase__, __templateNameToPascalCase__State>,
+        __templateNameToLowerCase___renderer,
+    );
+}
+
+#[derive(Bundle)]
+pub struct __templateNameToPascalCase__Bundle {
+    pub count: __templateNameToPascalCase__,
+    pub styles: KStyle,
+    pub computed_styles: ComputedStyles,
+    pub widget_name: WidgetName,
+}
+
+impl Default for __templateNameToPascalCase__Bundle {
+    fn default() -> Self {
+        Self {
+            count: __templateNameToPascalCase__::default(),
+            styles: KStyle::default(),
+            computed_styles: ComputedStyles::default(),
+            widget_name: __templateNameToPascalCase__::default().get_name(),
+        }
+    }
+}
