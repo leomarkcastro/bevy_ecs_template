@@ -4,7 +4,7 @@
 use bevy::prelude::*;
 
 use crate::game_modules::timers::components::{
-    HalfSecondTimer, MillisencondTimer, OneSecondTimer, ThreeSecondTimer,
+    HalfMilliSecondTimer, MillisencondTimer, OneSecondTimer, ThreeSecondTimer,
 };
 
 pub struct TimeSystemPlugin;

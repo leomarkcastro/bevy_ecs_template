@@ -1,4 +1,5 @@
 pub mod ai;
+pub mod animated;
 pub mod collidable;
 pub mod despawn;
 pub mod despawn_on_clock;

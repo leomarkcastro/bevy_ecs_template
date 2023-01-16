@@ -14,7 +14,7 @@ use crate::{
         controllable::components::ControllableResource,
         shaders::simple_point_light::components::CoolMaterialUniformInput,
         time_system::systems::CurrentWorldTimeGlobal,
-        timers::components::{HalfSecondTimer, OneSecondTimer},
+        timers::components::{HalfMilliSecondTimer, OneSecondTimer},
     },
     gui::{
         bordered::{gui_plug_bordered_widget, BorderedBundle},

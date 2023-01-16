@@ -4,7 +4,7 @@
 use bevy::prelude::*;
 
 use super::{
-    components::{HalfSecondTimer, MillisencondTimer, ThreeSecondTimer},
+    components::{HalfMilliSecondTimer, MillisencondTimer, QuarterSencondTimer, ThreeSecondTimer},
     OneSecondTimer,
 };
 
@@ -13,7 +13,8 @@ pub struct TimersPlugin;
 impl Plugin for TimersPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<MillisencondTimer>()
-            .init_resource::<HalfSecondTimer>()
+            .init_resource::<QuarterSencondTimer>()
+            .init_resource::<HalfMilliSecondTimer>()
             .init_resource::<OneSecondTimer>()
             .init_resource::<ThreeSecondTimer>();
     }

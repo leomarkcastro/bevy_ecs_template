@@ -221,7 +221,7 @@ fn ai_detection_system(
                     false
                 });
 
-                return; // HEY!! THIS IS A TEMPORARY RETURN STATEMENT
+                // return; // TODO: THIS IS A TEMPORARY RETURN STATEMENT
 
                 // check if any player is within detection range
                 for (identifier, detection, player_gtransform) in player_filter {

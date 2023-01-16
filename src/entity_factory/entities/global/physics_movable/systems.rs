@@ -4,8 +4,8 @@
 use bevy::{ecs::system::EntityCommands, prelude::*};
 use bevy_rapier2d::{
     prelude::{
-        ActiveEvents, Collider, CollidingEntities, NoUserData, RapierConfiguration,
-        RapierPhysicsPlugin, RigidBody, Velocity,
+        ActiveEvents, Collider, ColliderMassProperties, CollidingEntities, NoUserData,
+        RapierConfiguration, RapierPhysicsPlugin, RigidBody, Velocity,
     },
     render::RapierDebugRenderPlugin,
 };
@@ -41,6 +41,8 @@ pub struct PhysicsFeature {
     pub effect: Option<ProjectileEffect>,
     pub rigidbody_type: Option<RigidBody>,
     pub record_collidability: bool,
+    pub modify_angle: bool,
+    pub weight: f32,
 }
 
 impl Default for PhysicsFeature {
@@ -52,6 +54,8 @@ impl Default for PhysicsFeature {
             effect: None,
             rigidbody_type: Some(RigidBody::Dynamic),
             record_collidability: false,
+            modify_angle: true,
+            weight: 1.0,
         }
     }
 }
@@ -69,7 +73,12 @@ pub fn insert_physics_components(ent_com: &mut EntityCommands, features: Physics
         .insert(ActiveEvents::COLLISION_EVENTS)
         .insert(features.rigidbody_type.unwrap_or_default())
         .insert(Velocity::zero())
-        .insert(PXMovableComponent::default());
+        .insert(PXMovableComponent {
+            modify_angle: features.modify_angle,
+            ..Default::default()
+        })
+        .insert(ColliderMassProperties::Density(features.weight));
+
     if features.record_collidability {
         ent_com.insert(PXSize {
             width: size.x * 2.,
@@ -100,7 +109,9 @@ fn physics_movement_system(mut query: Query<(&PXMovableComponent, &mut Velocity,
         // the bevy_rapier plugin will update the Sprite transform.
         rb_vels.linvel = move_delta * BASE_SPEED;
         // tf.rotate(Quat::from_rotation_z(1.0 * TIME_STEP));
-        tf.rotation = Quat::from_rotation_z(input_movable.angle);
+        if input_movable.modify_angle {
+            tf.rotation = Quat::from_rotation_z(input_movable.angle);
+        }
 
         // get current angle of the rigid body
         // let angle = tf.rotation.to_axis_angle().1;

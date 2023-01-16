@@ -123,7 +123,7 @@ fn save_system(
                     .expect("Error while writing scene to file");
             });
 
-            saveload_state.save_task = Some(task);
+            // saveload_state.save_task = Some(task);
         }
         _ => {}
     }

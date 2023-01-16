@@ -1,5 +1,6 @@
 pub mod camera;
 pub mod controllable;
+pub mod dynamic_data;
 pub mod face_axis;
 pub mod global_event;
 pub mod kayak;

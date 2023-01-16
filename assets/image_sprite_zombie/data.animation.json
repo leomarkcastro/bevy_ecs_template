@@ -1,0 +1,50 @@
+{
+  "max_width": 512,
+  "max_height": 512,
+  "animation_keys": [
+    "zombie_f_attack",
+    "zombie_f_idle",
+    "zombie_f_walk",
+    "zombie_m_attack",
+    "zombie_m_death",
+    "zombie_m_walk"
+  ],
+  "metadata": {
+    "zombie_f_attack": {
+      "max_width": 512,
+      "max_height": 512,
+      "total_sprites": 9,
+      "aspect_ratio": 1.0
+    },
+    "zombie_f_idle": {
+      "max_width": 512,
+      "max_height": 512,
+      "total_sprites": 6,
+      "aspect_ratio": 1.0
+    },
+    "zombie_f_walk": {
+      "max_width": 512,
+      "max_height": 512,
+      "total_sprites": 9,
+      "aspect_ratio": 1.0
+    },
+    "zombie_m_attack": {
+      "max_width": 512,
+      "max_height": 512,
+      "total_sprites": 9,
+      "aspect_ratio": 1.0
+    },
+    "zombie_m_death": {
+      "max_width": 512,
+      "max_height": 512,
+      "total_sprites": 6,
+      "aspect_ratio": 1.0
+    },
+    "zombie_m_walk": {
+      "max_width": 512,
+      "max_height": 512,
+      "total_sprites": 9,
+      "aspect_ratio": 1.0
+    }
+  }
+}

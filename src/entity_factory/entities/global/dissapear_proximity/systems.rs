@@ -4,7 +4,9 @@
 use bevy::prelude::*;
 
 use crate::{
-    entity_factory::entities::playerv2::entities::Playerv2Entity,
+    entity_factory::entities::{
+        playerv2::entities::Playerv2Entity, playerv3::entities::Playerv3Entity,
+    },
     utils::check_collide::check_pointtorect_collide_rect,
 };
 
@@ -22,10 +24,11 @@ impl Plugin for DissapearProximityPlugin {
 fn dissapear_proximity_system(
     mut q_roof: Query<(&mut Sprite, &GlobalTransform), With<DissapearProximityComponent>>,
     q_player: Query<
-        (&Sprite, &GlobalTransform),
-        (With<Playerv2Entity>, Without<DissapearProximityComponent>),
+        (&TextureAtlasSprite, &GlobalTransform),
+        (With<Playerv3Entity>, Without<DissapearProximityComponent>),
     >,
 ) {
+    // println!("{}", q_player.iter().count().to_string());
     for (a_sprite, a_gtransform) in q_player.iter() {
         // check if any player is within detection range
         for (mut b_sprite, b_gtransform) in q_roof.iter_mut() {

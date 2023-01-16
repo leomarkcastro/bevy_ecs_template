@@ -2,7 +2,7 @@
 // WILL: contain pure logic that interacts with the component
 
 use bevy::{ecs::system::EntityCommands, math::Vec3Swizzles, prelude::*};
-use bevy_rapier2d::prelude::{CollidingEntities, Velocity};
+use bevy_rapier2d::prelude::{CollidingEntities, Sensor, Velocity};
 
 use crate::entity_factory::{
     entities::{
@@ -30,7 +30,7 @@ impl Plugin for Bulletv1Plugin {
 
 pub fn bulletv1_spawn(mut body: &mut EntityCommands, spawn_entity_event: &SpawnProjectileEvent) {
     // move at asset from current position
-    let transform_xy = spawn_entity_event.source.unwrap_or_default().xyy().xy();
+    let transform_xy = spawn_entity_event.source.unwrap_or_default();
 
     let distance = spawn_entity_event.distance.unwrap_or_default();
 
@@ -40,7 +40,7 @@ pub fn bulletv1_spawn(mut body: &mut EntityCommands, spawn_entity_event: &SpawnP
     let transform_angle = rotation.to_axis_angle().1 * rotation.to_axis_angle().0.z;
 
     // get new position with x distrance from target asset and angle
-    let transform_xy_with_angle = transform_xy
+    let transform_xy_with_angle = transform_xy.xy()
         + Vec2::new(
             distance * transform_angle.cos(),
             distance * transform_angle.sin(),
@@ -57,7 +57,7 @@ pub fn bulletv1_spawn(mut body: &mut EntityCommands, spawn_entity_event: &SpawnP
             ..Default::default()
         },
         transform: Transform {
-            translation: transform_xy_with_angle.extend(40.0),
+            translation: transform_xy_with_angle.extend(transform_xy.z),
             rotation: rotation,
             ..Default::default()
         },

@@ -32,6 +32,18 @@ impl Default for ThreeSecondTimer {
 }
 
 #[derive(Resource)]
+pub struct QuarterSencondTimer {
+    pub event_timer: Timer,
+}
+
+impl Default for QuarterSencondTimer {
+    fn default() -> Self {
+        QuarterSencondTimer {
+            event_timer: Timer::from_seconds(0.25, TimerMode::Repeating),
+        }
+    }
+}
+#[derive(Resource)]
 pub struct MillisencondTimer {
     pub event_timer: Timer,
 }
@@ -45,13 +57,13 @@ impl Default for MillisencondTimer {
 }
 
 #[derive(Resource)]
-pub struct HalfSecondTimer {
+pub struct HalfMilliSecondTimer {
     pub event_timer: Timer,
 }
 
-impl Default for HalfSecondTimer {
+impl Default for HalfMilliSecondTimer {
     fn default() -> Self {
-        HalfSecondTimer {
+        HalfMilliSecondTimer {
             event_timer: Timer::from_seconds(0.05, TimerMode::Repeating),
         }
     }

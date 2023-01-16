@@ -4,6 +4,8 @@ use bevy::prelude::App;
 pub mod blockv1;
 pub mod blockv2;
 pub mod blockv3;
+pub mod cratev1;
+pub mod floorv1;
 pub mod global;
 pub mod pickupablev1;
 pub mod playerv1;
@@ -13,9 +15,15 @@ pub mod polygonv1;
 pub mod polygonv2;
 pub mod projectiles;
 pub mod roofv1;
+pub mod roofv2;
 pub mod roomv1;
 pub mod treev1;
+pub mod treev2;
+pub mod treev2_base;
+pub mod treev2_top;
+pub mod wallv1;
 pub mod zombiesv1;
+pub mod zombiesv2;
 
 use global::*;
 
@@ -32,15 +40,21 @@ pub fn inject_entities(app: &mut App) {
     app.add_plugin(playerv2::systems::Playerv2Plugin);
     app.add_plugin(playerv3::systems::Playerv3Plugin);
     app.add_plugin(zombiesv1::systems::Zombiesv1Plugin);
+    app.add_plugin(zombiesv2::systems::Zombiesv2Plugin);
     app.add_plugin(pickupablev1::systems::Pickupablev1Plugin);
     app.add_plugin(blockv1::systems::Blockv1Plugin);
     app.add_plugin(blockv2::systems::Blockv2Plugin);
     app.add_plugin(blockv3::systems::Blockv3Plugin);
     app.add_plugin(roofv1::systems::Roofv1Plugin);
+    app.add_plugin(roofv2::systems::Roofv2Plugin);
     app.add_plugin(polygonv1::systems::Polygonv1Plugin);
     app.add_plugin(polygonv2::systems::Polygonv2Plugin);
     app.add_plugin(roomv1::systems::RoomV1Plugin);
     app.add_plugin(treev1::systems::Treev1Plugin);
+    app.add_plugin(wallv1::systems::Wallv1Plugin);
+    app.add_plugin(cratev1::systems::Cratev1Plugin);
+    app.add_plugin(floorv1::systems::Floorv1Plugin);
+    app.add_plugin(treev2::systems::Treev2Plugin);
 
     app.add_plugin(ui::screen::simple_text::systems::SimpleTextPlugin);
 }

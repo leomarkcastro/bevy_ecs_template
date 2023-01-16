@@ -77,6 +77,7 @@ fn pathfinding_query_client_system(
         let a = event.start;
         let b = event.goal;
 
+        #[cfg(not(target_arch = "wasm32"))]
         let task = AsyncComputeTaskPool::get().spawn(async move {
             // let point_locaitons = &path_data.path_data.as_ref().unwrap().points;
             // let point_length = point_locaitons.len();
@@ -120,6 +121,7 @@ fn pathfinding_query_client_system(
         // get current time after 5 seconds
         let despawn_time = current_time + 2.0;
 
+        #[cfg(not(target_arch = "wasm32"))]
         pathfind_process.processess.insert(
             event.id.to_string(),
             PathFindProcess {

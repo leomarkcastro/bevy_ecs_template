@@ -29,6 +29,7 @@ impl Default for SpawnProjectileEvent {
 #[derive(Debug)]
 pub enum ProjectileEntity {
     Bulletv1,
+    Bulletv2,
 }
 
 #[derive(Debug, Copy, Clone)]

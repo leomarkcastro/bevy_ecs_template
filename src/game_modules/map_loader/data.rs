@@ -1,6 +1,8 @@
-use bevy::prelude::Vec2;
+use bevy::{prelude::Vec2, utils::HashMap};
 use knn::PointCloud;
 use serde::{Deserialize, Serialize};
+
+use crate::game_modules::dynamic_data::mapdata_definition::MapDataDefinition;
 
 // Map Related Structs
 
@@ -12,16 +14,6 @@ pub struct PointData {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct BuildingData {
-    pub id: String,
-    pub center: Vec2,
-    pub width: f32,
-    pub height: f32,
-    pub radius: f32,
-    pub bldg_type: String,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
 pub struct LandFeatureData {
     pub id: String,
     pub start: Vec2,
@@ -30,6 +22,16 @@ pub struct LandFeatureData {
     pub center: Vec2,
     pub radius: f32,
     pub points_data: Option<Vec<PointData>>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct BuildingData {
+    pub id: String,
+    pub center: Vec2,
+    pub width: f32,
+    pub height: f32,
+    pub radius: f32,
+    pub bldg_type: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -68,16 +70,6 @@ pub struct RoomFeatureData {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum RoomType {
-    House,
-    Hotel,
-    Shop,
-    Clinic,
-    Mechanic,
-    Gunshop,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
 pub struct RoomData {
     pub house: Vec<RoomFeatureData>,
     pub hotel: Vec<RoomFeatureData>,
@@ -91,4 +83,30 @@ pub struct RoomData {
 pub struct PathData {
     pub points: Vec<Vec2>,
     pub vertices: Vec<Vec<u32>>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct TileDataCell {
+    pub x: f32,
+    pub y: f32,
+    pub tile: u32,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct TileData {
+    pub xsize: u32,
+    pub ysize: u32,
+    pub total: u32,
+    pub points: HashMap<String, TileDataCell>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum RoomType {
+    SafeHouse,
+    House,
+    Hotel,
+    Shop,
+    Clinic,
+    Mechanic,
+    Gunshop,
 }

@@ -1,0 +1,120 @@
+{
+  "max_width": 512,
+  "max_height": 512,
+  "animation_keys": [
+    "death",
+    "gun_bat",
+    "gun_flamethrower",
+    "gun_knife",
+    "gun_pistol",
+    "gun_rifle",
+    "idle_bat",
+    "idle_flamethrower",
+    "idle_gun",
+    "idle_knife",
+    "idle_rifle",
+    "walk_bat",
+    "walk_flamethrower",
+    "walk_gun",
+    "walk_knife",
+    "walk_rifle"
+  ],
+  "metadata": {
+    "death": {
+      "max_width": 512,
+      "max_height": 512,
+      "total_sprites": 6,
+      "aspect_ratio": 1.0
+    },
+    "gun_bat": {
+      "max_width": 512,
+      "max_height": 512,
+      "total_sprites": 12,
+      "aspect_ratio": 1.0
+    },
+    "gun_flamethrower": {
+      "max_width": 512,
+      "max_height": 512,
+      "total_sprites": 9,
+      "aspect_ratio": 1.0
+    },
+    "gun_knife": {
+      "max_width": 512,
+      "max_height": 512,
+      "total_sprites": 8,
+      "aspect_ratio": 1.0
+    },
+    "gun_pistol": {
+      "max_width": 512,
+      "max_height": 512,
+      "total_sprites": 5,
+      "aspect_ratio": 1.0
+    },
+    "gun_rifle": {
+      "max_width": 512,
+      "max_height": 512,
+      "total_sprites": 9,
+      "aspect_ratio": 1.0
+    },
+    "idle_bat": {
+      "max_width": 512,
+      "max_height": 512,
+      "total_sprites": 8,
+      "aspect_ratio": 1.0
+    },
+    "idle_flamethrower": {
+      "max_width": 512,
+      "max_height": 512,
+      "total_sprites": 8,
+      "aspect_ratio": 1.0
+    },
+    "idle_gun": {
+      "max_width": 512,
+      "max_height": 512,
+      "total_sprites": 8,
+      "aspect_ratio": 1.0
+    },
+    "idle_knife": {
+      "max_width": 512,
+      "max_height": 512,
+      "total_sprites": 8,
+      "aspect_ratio": 1.0
+    },
+    "idle_rifle": {
+      "max_width": 512,
+      "max_height": 512,
+      "total_sprites": 8,
+      "aspect_ratio": 1.0
+    },
+    "walk_bat": {
+      "max_width": 512,
+      "max_height": 512,
+      "total_sprites": 5,
+      "aspect_ratio": 1.0
+    },
+    "walk_flamethrower": {
+      "max_width": 512,
+      "max_height": 512,
+      "total_sprites": 6,
+      "aspect_ratio": 1.0
+    },
+    "walk_gun": {
+      "max_width": 512,
+      "max_height": 512,
+      "total_sprites": 6,
+      "aspect_ratio": 1.0
+    },
+    "walk_knife": {
+      "max_width": 512,
+      "max_height": 512,
+      "total_sprites": 6,
+      "aspect_ratio": 1.0
+    },
+    "walk_rifle": {
+      "max_width": 512,
+      "max_height": 512,
+      "total_sprites": 6,
+      "aspect_ratio": 1.0
+    }
+  }
+}

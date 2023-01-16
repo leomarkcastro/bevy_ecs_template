@@ -5,6 +5,8 @@ use bevy::{
     utils::Uuid,
 };
 
+use crate::entity_factory::entities::global::animated::components::AnimatedComponent;
+
 #[derive(Component, Debug, Clone)]
 pub struct Animated;
 
@@ -23,18 +25,35 @@ impl Default for AnimationTimer {
     }
 }
 
-#[derive(Default)]
 pub struct AnimationSettings {
     pub frame_duration: f32,
+    pub index_start: u32,
+    pub index_end: u32,
+    pub direction: u32,
+}
+
+impl Default for AnimationSettings {
+    fn default() -> Self {
+        Self {
+            frame_duration: 0.05,
+            index_start: 0,
+            index_end: 0,
+            direction: 1,
+        }
+    }
 }
 
 pub fn insert_animation_components(
     ent_com: &mut EntityCommands,
     animation_settings: Option<AnimationSettings>,
 ) {
-    let frame = match animation_settings {
-        Some(settings) => settings.frame_duration,
-        None => 0.05,
-    };
-    ent_com.insert(Animated).insert(AnimationTimer::new(frame));
+    let animation_settings = animation_settings.unwrap_or(AnimationSettings::default());
+    ent_com
+        .insert(Animated)
+        .insert(AnimationTimer::new(animation_settings.frame_duration))
+        .insert(AnimatedComponent {
+            index_start: animation_settings.index_start,
+            index_end: animation_settings.index_end,
+            direction: animation_settings.direction,
+        });
 }

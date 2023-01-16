@@ -8,6 +8,7 @@ pub struct PXMovableComponent {
     pub vec_x: f32,
     pub vec_y: f32,
     pub angle: f32,
+    pub modify_angle: bool,
 }
 
 #[derive(Component, Debug)]
@@ -22,6 +23,7 @@ impl Default for PXMovableComponent {
             vec_x: 0.0,
             vec_y: 0.0,
             angle: 0.0,
+            modify_angle: true,
         }
     }
 }

@@ -3,52 +3,45 @@
 
 use bevy::prelude::*;
 
+use crate::entity_factory::entities::global::animated::components::AnimatedComponent;
+
 use super::components::{Animated, AnimationTimer};
+
+#[derive(Resource, Default)]
+pub struct GameTextures {
+    pub player_atlas: Option<Handle<TextureAtlas>>,
+    pub zombie_atlas: Option<Handle<TextureAtlas>>,
+}
 
 pub struct LoadAssetsPlugin;
 
 impl Plugin for LoadAssetsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(load_assets_and_animations)
+        app.insert_resource(GameTextures::default())
             .add_system(assets_animation_ticker);
     }
 }
 
-#[derive(Resource)]
-pub struct GameTextures {
-    pub player: Handle<Image>,
-    pub idle_gun: Handle<TextureAtlas>,
-}
-
-fn load_assets_and_animations(
-    mut commands: Commands,
-    assets_server: Res<AssetServer>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-) {
-    let texture_handle = assets_server.load("image_sprite_humans/idle_gun.png");
-    let texture_atlas =
-        TextureAtlas::from_grid(texture_handle, Vec2::new(423., 349.), 8, 1, None, None);
-    let explosion = texture_atlases.add(texture_atlas);
-
-    let player = assets_server.load("image_sprite_humans/idle_gun/Idle_gun_000.png");
-
-    let game_textures = GameTextures {
-        player,
-        idle_gun: explosion,
-    };
-    commands.insert_resource(game_textures);
-}
-
 fn assets_animation_ticker(
     time: Res<Time>,
-    mut query: Query<(Entity, &mut AnimationTimer, &mut TextureAtlasSprite), With<Animated>>,
+    mut query: Query<
+        (
+            Entity,
+            &mut AnimationTimer,
+            &mut TextureAtlasSprite,
+            &AnimatedComponent,
+        ),
+        With<Animated>,
+    >,
 ) {
-    for (entity, mut timer, mut sprite) in query.iter_mut() {
+    for (entity, mut timer, mut sprite, animate_data) in query.iter_mut() {
         timer.0.tick(time.delta());
         if timer.0.finished() {
-            sprite.index += 1; // move to next sprite cell
-            if sprite.index >= 7 {
-                sprite.index = 0;
+            sprite.index += animate_data.direction as usize; // move to next sprite cell
+            if sprite.index >= animate_data.index_end as usize
+                || sprite.index < animate_data.index_start as usize
+            {
+                sprite.index = animate_data.index_start as usize;
             }
         }
     }

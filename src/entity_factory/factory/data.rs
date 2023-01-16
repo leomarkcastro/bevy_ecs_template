@@ -90,6 +90,7 @@ pub enum GameEntity {
     PlayerV3,
     Bulletv1,
     Zombiesv1,
+    Zombiesv2,
     Pickupablev1,
     Blockv1,
     Blockv2,
@@ -98,7 +99,12 @@ pub enum GameEntity {
     Polygonv2,
     Roomv1,
     Roofv1,
+    Roofv2,
+    Treetopv1,
     Treev1,
+    Treev2,
+    Wallv1,
+    Cratev1,
 }
 
 #[derive(Debug)]
@@ -132,6 +138,9 @@ pub enum GameEntityData {
         despawn_timer_data: DespawnWithTimerComponent,
     },
     Zombiesv1 {
+        despawn_data: DespawnComponent,
+    },
+    Zombiesv2 {
         despawn_data: DespawnComponent,
     },
 }
